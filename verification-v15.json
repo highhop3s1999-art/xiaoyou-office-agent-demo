@@ -1,0 +1,43 @@
+{
+  "version": "20261026-15.0",
+  "entry": "http://127.0.0.1:4314/frontend/#agent/product",
+  "regression_tests": {
+    "files": 9,
+    "assertions": 439,
+    "passed": true
+  },
+  "syntax_check": {
+    "module": "frontend/src/conversation-ui.js",
+    "passed": true
+  },
+  "browser_checks": {
+    "sizes": [
+      [
+        1440,
+        900
+      ],
+      [
+        1280,
+        800
+      ]
+    ],
+    "expert_previews": 3,
+    "conversation_previews_per_expanded_expert": 3,
+    "expanded_groups": 1,
+    "document_overflow": false,
+    "script_errors": [],
+    "verified": [
+      "New conversation from sidebar expert plus opened under the correct expert",
+      "Header new conversation automatically expanded its owner and highlighted the new row",
+      "First sent message renamed the sidebar conversation",
+      "Sidebar child row switched the main transcript and current highlight",
+      "Collapse and expand retained existing conversations",
+      "View All appeared for more than three conversations"
+    ]
+  },
+  "prior_snapshot": "versions/expert-conversations-v14/index.html",
+  "screenshots": [
+    "screenshots/v15-expert-sidebar-1440.png",
+    "screenshots/v15-expert-sidebar-1280.png"
+  ]
+}

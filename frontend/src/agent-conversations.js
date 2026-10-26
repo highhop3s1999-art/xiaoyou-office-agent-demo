@@ -1,0 +1,44 @@
+// Persistent Agent conversations reference tasks; tasks still own execution and approvals.
+import {uid} from './core.js?v=20261026-15.0';
+import {initExpertLibrary} from './expert-library.js?v=20261026-15.0';
+const personal={id:'personal',name:'小悠',description:'一起想清楚目标，连接资料与专家，把工作推进到交付',icon:'sparkles',source:'个人智能体',version:'v1',pinned:true};
+const conversationTitle=text=>String(text||'').replace(/\s+/g,' ').trim().slice(0,32)||'新对话';
+function touch(thread,at=Date.now()){thread.updatedAt=Math.max(thread.updatedAt||0,at);}
+function ensureThread(state,agentId,key){const o=state.office;o.threads||={};let thread=o.threads[key];if(thread&&thread.agentId!==agentId)return null;if(!thread){thread=o.threads[key]={id:key,agentId,messages:[],draft:'',context:[],mentions:[],activeTaskId:null,initialized:false,title:'新对话',createdAt:Date.now(),updatedAt:Date.now()};}thread.id||=key;thread.messages||=[];thread.draft||='';thread.context||=[];thread.mentions||=[];thread.createdAt||=thread.messages.find(m=>m.at)?.at||Date.now();thread.updatedAt||=Math.max(thread.createdAt,...thread.messages.map(m=>m.at||0));thread.title||=conversationTitle(thread.messages.find(m=>m.role==='user')?.text);thread.expertRef||=expertReference(state,agentId);return thread;}
+function expertReference(state,id){const a=state.office.agents.find(a=>a.id===id);return {id,version:a?.version||'v1',name:a?.name||'小悠',publishId:a?.publishId||null};}
+export function agentThread(state,id,conversationId){const o=state.office;o.activeConversations||={};const key=conversationId||o.activeConversations[id]||id;let thread=ensureThread(state,id,key);if(!thread){if(conversationId)return null;thread=ensureThread(state,id,id);}if(!conversationId)o.activeConversations[id]=thread.id;return thread;}
+export function conversationTasks(state,agentId,conversationId=agentThread(state,agentId).id){return state.tasks.filter(t=>t.office?.agentId===agentId&&(t.office.conversationId||agentId)===conversationId);}
+export function agentConversations(state,id){agentThread(state,id);return Object.values(state.office.threads).filter(t=>t.agentId===id).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));}
+export function taskConversation(state,task){const id=task.office.agentId;let thread=task.office.conversationId?agentThread(state,id,task.office.conversationId):null;if(!thread)thread=agentThread(state,id,id);task.office.conversationId=thread.id;return thread;}
+export function switchAgentConversation(state,id,conversationId){const thread=state.office.threads?.[conversationId];if(!thread||thread.agentId!==id)return null;state.office.activeConversations||={};state.office.activeConversations[id]=thread.id;return ensureThread(state,id,thread.id);}
+export function createAgentConversation(state,id,{reuseEmpty=true}={}){if(!state.office.agents.some(a=>a.id===id))return null;const current=agentThread(state,id);if(reuseEmpty&&!current.activeTaskId&&!current.messages.some(m=>m.role==='user')&&!current.draft.trim()&&!current.context.length&&!current.mentions.length){current.newTopic=true;return current;}const key=uid('conversation'),thread=ensureThread(state,id,key);thread.newTopic=true;thread.initialized=true;state.office.activeConversations[id]=key;welcome(state,thread);return thread;}
+export function renameAgentConversation(state,id,conversationId,title){const thread=state.office.threads?.[conversationId],value=String(title||'').trim();if(!thread||thread.agentId!==id||!value)return false;thread.title=value.slice(0,60);thread.customTitle=true;touch(thread);return true;}
+export function addAgentMessage(state,id,role,text,options={}){const task=options.taskId&&state.tasks.find(t=>t.id===options.taskId&&t.office?.agentId===id),conversationId=options.conversationId||(task?taskConversation(state,task).id:null);const thread=agentThread(state,id,conversationId);if(!thread)return null;if(options.key&&thread.messages.some(m=>m.key===options.key))return null;const m={id:uid('message'),role,text,at:Date.now(),...options,conversationId:thread.id};thread.messages.push(m);touch(thread,m.at);if(role==='user'&&!thread.customTitle&&thread.title==='新对话')thread.title=conversationTitle(text);return m;}
+export function focusAgentTask(state,task){const thread=taskConversation(state,task);switchAgentConversation(state,task.office.agentId,thread.id);thread.activeTaskId=task.id;thread.newTopic=false;return thread;}
+export function selectedAgentTask(state,id){const thread=agentThread(state,id),t=state.tasks.find(t=>t.id===thread.activeTaskId);return t?.office?.agentId===id&&(t.office.conversationId||id)===thread.id?t:null;}
+function welcome(state,thread){if(thread.messages.length)return false;const a=state.office.agents.find(a=>a.id===thread.agentId);return !!addAgentMessage(state,thread.agentId,'assistant',thread.agentId==='personal'?'我是小悠。你可以直接问我问题，也可以把一件工作交给我。计划、执行和成果会放在右侧，讨论一直留在这里。':`我是${a?.name||'你的专家'}。${(a?.description||'和你一起推进工作').replace(/[。.!！]+$/,'')}。这条对话从这里开始，你可以补充背景或交办工作。`,{conversationId:thread.id,key:'welcome:'+thread.id,kind:'welcome',at:thread.id===thread.agentId?0:thread.createdAt});}
+export function syncAgentThreads(state){const o=state.office;if(!o)return false;let changed=false;if(!o.agents.some(a=>a.id==='personal')){o.agents.unshift({...personal});changed=true;}initExpertLibrary(state);o.agents.find(a=>a.id==='personal').pinned=true;
+  for(const a of o.agents){const thread=agentThread(state,a.id);if(welcome(state,thread))changed=true;}
+  for(const task of [...state.tasks].filter(t=>t.office).sort((a,b)=>a.createdAt-b.createdAt)){
+    if(!o.agents.some(a=>a.id===task.office.agentId))task.office.agentId='personal';
+    const id=task.office.agentId,thread=taskConversation(state,task);
+    if(welcome(state,thread))changed=true;
+    const goal=addAgentMessage(state,id,'user',task.prompt,{conversationId:thread.id,key:`task:${task.id}:goal`,taskId:task.id,kind:'goal',at:task.createdAt});if(goal)changed=true;
+    const introText='我会先核对目标和现有资料，再安排几个子任务分别处理，最后统一检查和汇总。你可以查看分工，也可以随时补充要求。外部操作会另行确认。',introKey=`task:${task.id}:intro`,introMessage=thread.messages.find(m=>m.key===introKey);if(introMessage){if(introMessage.text!==introText){introMessage.text=introText;changed=true;}}else if(addAgentMessage(state,id,'assistant',introText,{key:introKey,conversationId:thread.id,taskId:task.id,kind:'task',at:task.createdAt+1}))changed=true;
+    for(const [index,m] of task.messages.entries()){if(index===0||m.role!=='user')continue;if(addAgentMessage(state,id,'user',m.text,{key:`task:${task.id}:message:${index}`,conversationId:thread.id,taskId:task.id,at:m.time||task.createdAt+index+2,author:m.text.startsWith('陈语')?'陈语 · 示例同事':undefined}))changed=true;}
+    for(const e of task.office.events){if(e.conversationHandled||['goal','step','template'].includes(e.kind)||e.title==='生成小队计划'||e.title==='已退回局部修正')continue;let text=`${e.title}。${e.detail||''}`;
+      if(e.kind==='run')text='我已按当前计划开始处理。进度和各角色的交付物会出现在右侧；你可以继续补充要求。';
+      if(e.kind==='failure')text=`这里遇到了一个问题：${e.detail} 我保留了已完成的资料和成果，可以从失败步骤继续。`;
+      if(e.kind==='delivery')text='本次交付已完成，成果与回执已保留。你可以继续修改，或交给同事接续。';
+      if(e.title==='准备操作确认')text=`报告和核对表已准备好，可以在右侧预览。本次拟${task.office.delivery}到「${task.office.target}」，请核对内容后确认。`;
+      if(e.title==='已批准本次操作')text=`已记录你对「${task.office.delivery}」的本次批准，适用对象和成果版本见右侧确认记录。`;
+      if(e.title==='用户拒绝，操作已停止')text='这次操作已拒绝，相关交付已停止。已有资料与成果保留，调整后可以重新提交确认。';
+      const key=`event:${task.id}:${e.id}`,existing=thread.messages.find(m=>m.key===key);if(existing){if(existing.text!==text){existing.text=text;changed=true;}}else if(addAgentMessage(state,id,'assistant',text,{key,conversationId:thread.id,taskId:task.id,kind:e.kind,eventTitle:e.title,at:e.at+2}))changed=true;
+    }
+
+    if(!thread.initialized)thread.activeTaskId=task.id;
+  }
+  for(const thread of Object.values(o.threads)){thread.initialized=true;thread.messages.sort((a,b)=>a.at-b.at);if(thread.activeTaskId&&!state.tasks.some(t=>t.id===thread.activeTaskId&&t.office?.agentId===thread.agentId&&(t.office.conversationId||thread.agentId)===thread.id)){thread.activeTaskId=null;changed=true;}}
+  o.conversationVersion=2;return changed;
+}
+export function classifyAgentMessage(text,task){const value=text.trim();if(/^(按计划执行|采用计划|开始执行|开始吧|执行计划|开始处理)[。！!\s]*$/.test(value)&&task)return 'start';if(/^(暂停|先暂停|停一下)[。！!\s]*$/.test(value)&&task)return 'pause';if(/^(继续|继续执行|恢复执行|恢复连接)[。！!\s]*$/.test(value)&&task)return 'resume';if(/^(同意|批准|确认写回|确认发布|发出去)[。！!\s]*$/.test(value)&&task)return 'approval';if(/你能|什么能力|怎么用|你好|能做什么/.test(value))return 'about';if(task&&/为什么|资料来源|数据来源|用的什么|什么口径|进度|到哪一步|用了.*记忆/.test(value))return 'question';if(task&&/补充|增加|调整|修改|改成|改为|先给|先说|请用|口径|记住|这份|这段/.test(value))return 'refine';if(/调研|研究|复盘|分析|核对|方案|整理|报告|搭建|制作|生成|助手/.test(value))return 'goal';return 'chat';}
