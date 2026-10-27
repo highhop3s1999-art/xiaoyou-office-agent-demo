@@ -1,4 +1,4 @@
-import {uid} from './core.js?v=20261026-15.0';
+import {uid} from './core.js';
 
 // Curated, synthetic examples. Counts and matching rules are prototype data.
 export const DISCOVERY_SKILLS=[

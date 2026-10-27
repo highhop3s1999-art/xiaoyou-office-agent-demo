@@ -1,7 +1,7 @@
 // Local event subscriptions. Testing is read-only; dispatch always uses the host task engine.
-import {event,detectScenario} from './office-model.js?v=20261026-15.0';
-import {uid} from './core.js?v=20261026-15.0';
-import {saveJob,createRun,jobKind} from './task-center-model.js?v=20261026-15.0';
+import {event,detectScenario} from './office-model.js';
+import {uid} from './core.js';
+import {saveJob,createRun,jobKind} from './task-center-model.js';
 export const EVENT_SOURCES={feishu:'飞书消息',document:'文档变更',mail:'邮件',business:'业务系统'};
 const words=s=>[...new Set(String(s||'').split(/[,，、\n]/).map(x=>x.trim()).filter(Boolean))];
 const copy=v=>JSON.parse(JSON.stringify(v));

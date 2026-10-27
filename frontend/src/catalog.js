@@ -1,4 +1,8 @@
-import {renderSkillLibrarySuggestions} from './skill-discovery-ui.js?v=20261026-15.0';
+import {assistantFromDescription,assistantCreateForm} from './assistant-create.js';
+import {renderAssistantAnalytics} from './assistant-analytics.js';
+import {initExpertLibrary,publishedExperts,saveExpert,pinExpert} from './expert-library.js';
+import {renderSkillLibrarySuggestions} from './skill-discovery-ui.js';
+import {isPluginConnected,setPluginConnection} from './account-state.js';
 const PLUGINS = [
   ['browser','操作浏览器','浏览器与电脑','让小悠打开网页、查找资料和填写表单。支持内置浏览器和浏览器扩展。','globe',true,false],
   ['computer','操作电脑','浏览器与电脑','查看屏幕并操作本机应用。需要单独开启和系统权限。','monitor',false,false],
@@ -22,15 +26,15 @@ const SKILLS = [
   ['data-check','数据核对','核对指标定义、时间范围及计算口径。','全局','## 数据核对\n检查数据来源、时间范围、单位和异常值。把事实、解释和建议分开。']
 ].map(([id,name,description,scope,content])=>({id,name,description,scope,content,enabled:true,custom:id!=='slides'}));
 const EXPERTS = [
-  ['artnova','ArtNova 数据洞察专家','数据与研究','检索业务报表与指标定义，围绕已授权数据组织分析。','chart','分析本周项目指标的变化，并列出需要进一步核对的口径。'],
-  ['data-dev','数据开发专家','数据与研究','协助梳理数据需求、查询逻辑与验证步骤。','database','帮我把这个数据需求拆成查询步骤和验收项。'],
-  ['data-govern','数据治理专家','数据与研究','从资产、质量和成本出发整理治理问题与处理计划。','database','检查这份数据资产清单，整理质量风险和优先级。'],
-  ['data-ops','数据运维专家','数据与研究','梳理数据链路和故障线索，形成可检查的排查步骤。','activity','根据这份任务日志，整理异常的排查顺序。'],
-  ['tracking','伏羲埋点专家','数据与研究','围绕页面与业务流程梳理埋点方案和验证清单。','target','为新的功能页面列出需要的埋点和验证方式。'],
-  ['lumino','Lumino 告警分析专家','研发工程','结合告警、变更与调用线索组织问题分析。','activity','帮我整理这些告警之间可能的关系及待核实信息。'],
-  ['argus','Argus 智能排障专家','研发工程','将业务现象整理为逐步验证的排查路径。','code','围绕这个异常，给出先后有序的排查计划。'],
-  ['iquality','iQuality 质量专家','研发工程','查看问题反馈、整理分类与建议，准备后续处理方案。','shield','整理这批反馈的共同问题、优先级与建议处理人。'],
-  ['general','携程通识专家','效率与管理','帮助查找制度、流程与办事入口，并标明资料来源。','book','帮我查找这件事需要的流程、材料和办理入口。']
+  ['artnova','ArtNova 数据洞察助理','数据与研究','检索业务报表与指标定义，围绕已授权数据组织分析。','chart','分析本周项目指标的变化，并列出需要进一步核对的口径。'],
+  ['data-dev','数据开发助理','数据与研究','协助梳理数据需求、查询逻辑与验证步骤。','database','帮我把这个数据需求拆成查询步骤和验收项。'],
+  ['data-govern','数据治理助理','数据与研究','从资产、质量和成本出发整理治理问题与处理计划。','database','检查这份数据资产清单，整理质量风险和优先级。'],
+  ['data-ops','数据运维助理','数据与研究','梳理数据链路和故障线索，形成可检查的排查步骤。','activity','根据这份任务日志，整理异常的排查顺序。'],
+  ['tracking','伏羲埋点助理','数据与研究','围绕页面与业务流程梳理埋点方案和验证清单。','target','为新的功能页面列出需要的埋点和验证方式。'],
+  ['lumino','Lumino 告警分析助理','研发工程','结合告警、变更与调用线索组织问题分析。','activity','帮我整理这些告警之间可能的关系及待核实信息。'],
+  ['argus','Argus 智能排障助理','研发工程','将业务现象整理为逐步验证的排查路径。','code','围绕这个异常，给出先后有序的排查计划。'],
+  ['iquality','iQuality 质量助理','研发工程','查看问题反馈、整理分类与建议，准备后续处理方案。','shield','整理这批反馈的共同问题、优先级与建议处理人。'],
+  ['general','携程通识助理','效率与管理','帮助查找制度、流程与办事入口，并标明资料来源。','book','帮我查找这件事需要的流程、材料和办理入口。']
 ].map(([id,name,category,description,icon,example])=>({id,name,category,description,icon,example,custom:false,requiresAuth:id!=='general',auth:'unconnected',instructions:`你是${name}。围绕用户提供的材料与获准的工具处理任务。缺少证据时明确指出，不虚构查询或执行结果。`,plugins:id==='general'?['lark']:['idata'],skills:[],knowledge:id==='general'?'携程通识知识库':'业务知识库（示例）'}));
 
 const CAT_LABELS = ['全部','已安装','浏览器与电脑','图片与视频','办公协作','携程研发','开发工具'];
@@ -44,6 +48,14 @@ export function initCatalog(state) {
   if (!Array.isArray(c.plugins)) c.plugins=structuredClone(PLUGINS);
   if (!Array.isArray(c.skills)) c.skills=structuredClone(SKILLS);
   if (!Array.isArray(c.experts)) c.experts=structuredClone(EXPERTS);
+  // Rename only unchanged built-in copy from older saved versions.
+  for (const item of c.experts) {
+    const seed=EXPERTS.find(x=>x.id===item.id);
+    if (!seed || item.custom) continue;
+    for (const key of ['name','instructions']) {
+      if (item[key]===seed[key].replaceAll('助理','\u4e13\u5bb6')) item[key]=seed[key];
+    }
+  }
   if (!Array.isArray(c.mcps)) c.mcps=[
     {id:'email-mcp',name:'email',type:'local',command:'email-mcp',args:'--stdio',url:'',timeout:30,description:'携程邮箱插件提供的工具连接。',status:'unconnected',tools:8},
     {id:'figma-mcp',name:'Figma',type:'remote',url:'https://mcp.figma.com/mcp',command:'',args:'',timeout:30,description:'设计资源与文件上下文。',status:'auth-required',tools:0}
@@ -61,18 +73,35 @@ function icon(ctx,name,size=20) {return ctx.icon(name,size);}
 function btn(ctx,action,label,{id='',cls='',glyph=''}={}) {return `<button type="button" class="btn ${cls}" data-action="cat:${action}"${id?` data-id="${ctx.esc(id)}"`:''}>${glyph?icon(ctx,glyph,16):''}${ctx.esc(label)}</button>`;}
 function switcher(ctx,kind,item) {return `<button type="button" class="toggle ${item.enabled?'on':''}" role="switch" aria-checked="${!!item.enabled}" aria-label="${ctx.esc(item.enabled?'停用':'启用')}${ctx.esc(item.name)}" data-action="cat:toggle" data-kind="${kind}" data-id="${ctx.esc(item.id)}"><span></span></button>`;}
 function empty(ctx,text) {return `<div class="empty-state cat-empty">${icon(ctx,'search',32)}<h3>没有找到匹配内容</h3><p class="muted">${ctx.esc(text)}</p>${btn(ctx,'clear','清空筛选',{cls:'ghost'})}</div>`;}
-function authBadge(ctx,item) {return item.requiresAuth?`<span class="cat-auth ${item.auth==='demo-authorized'?'is-ready':''}">${item.auth==='demo-authorized'?'演示已授权':'未授权'}</span>`:'';}
+function authBadge(ctx,item) {const connected=isPluginConnected(ctx.state,item);return item.requiresAuth?`<span class="cat-auth ${connected?'is-ready':''}">${connected?'演示已授权':'未授权'}</span>`:'';}
 function tabs(ctx,route) {return `<div class="tabs cat-top-tabs">${[['plugins','插件'],['skills','技能'],['mcp','MCP']].map(([r,label])=>`<button class="tab ${route===r?'active':''}" data-action="cat:navigate" data-id="${r}">${label}</button>`).join('')}</div>`;}
 function filter(ctx,values,current) {return `<div class="cat-filters" aria-label="分类筛选">${values.map(x=>`<button class="cat-filter ${x===current?'active':''}" data-action="cat:filter" data-id="${ctx.esc(x)}" aria-pressed="${x===current}">${ctx.esc(x)}</button>`).join('')}</div>`;}
-function search(ctx,route,u) {return `<label class="cat-search">${icon(ctx,'search',18)}<input class="search-input" type="search" data-live="cat:search" data-route="${route}" value="${ctx.esc(u.queries[route]||'')}" placeholder="${route==='experts'?'搜索专家…':'搜索名称或描述…'}" aria-label="搜索${route==='experts'?'专家':'能力'}"></label>`;}
+function search(ctx,route,u) {return `<label class="cat-search">${icon(ctx,'search',18)}<input class="search-input" type="search" data-live="cat:search" data-route="${route}" value="${ctx.esc(u.queries[route]||'')}" placeholder="${route==='experts'?'搜索助理…':'搜索名称或描述…'}" aria-label="搜索${route==='experts'?'助理':'能力'}"></label>`;}
 function matches(item,q) {return `${item.name} ${item.description||''}`.toLowerCase().includes(q.trim().toLowerCase());}
 function scopeLabel(s) {return s||'全局';}
 
+function managedExperts(state){
+  initExpertLibrary(state);
+  return publishedExperts(state).filter(x=>x.saved||state.catalog.experts.some(item=>item.id===x.catalogId));
+}
+function ownExpert(state,x){return !!state.catalog.experts.find(item=>item.id===x.catalogId&&item.custom&&!item.installed);}
+function expertDashboard(ctx,id,keep=false){
+  const x=managedExperts(ctx.state).find(x=>x.publishId===id);if(!x||!ownExpert(ctx.state,x))return;
+  const u=ctx.ui.catalog;
+  if(!keep||u.dashboard?.id!==id)u.dashboard={id,days:30,metric:'calls'};
+  ctx.modal('数据看板',renderAssistantAnalytics(ctx,x,u.dashboard),{drawer:true});
+}
+function renderExpertManagement(ctx){
+  const [,u]=setup(ctx),e=ctx.esc,tab=u.expertManageTab==='created'?'created':'installed';
+  const items=managedExperts(ctx.state).filter(x=>tab==='created'?ownExpert(ctx.state,x):!ownExpert(ctx.state,x));
+  return `<main class="cat-page cat-expert-management"><button type="button" class="cat-manage-back" data-action="app:go" data-route="experts">${icon(ctx,'arrowLeft',16)}返回助理列表</button><div class="page-head cat-page-head"><h1>管理</h1></div><div class="cat-manage-tabs" role="tablist" aria-label="助理管理范围">${[['installed','已安装'],['created','我创建的']].map(([id,label])=>`<button type="button" role="tab" aria-selected="${tab===id}" aria-controls="expert-manage-panel" id="expert-manage-${id}" class="${tab===id?'active':''}" data-action="cat:manage-tab" data-id="${id}">${label}</button>`).join('')}</div><div id="expert-manage-panel" role="tabpanel" aria-labelledby="expert-manage-${tab}">${items.length?`<div class="cat-manage-grid">${items.map(x=>`<article class="cat-manage-card"><button type="button" class="cat-card-main" data-action="cat:expert-detail" data-id="${e(x.publishId)}"><span class="cat-expert-avatar cat-tone-violet">${icon(ctx,x.icon||'sparkles',24)}</span><span class="cat-card-copy"><span class="cat-card-title">${e(x.name)}</span><span class="cat-scope-caption">${e(x.publisher||'我')} · ${e(x.version||'v1.0')}</span><span class="cat-description">${e(x.description)}</span></span></button><div class="cat-manage-card-footer">${tab==='created'?btn(ctx,'manage-dashboard','数据看板',{id:x.publishId,cls:'small ghost',glyph:'chart'}):`<span>${e(x.category||'业务助理')}</span>`}<div>${btn(ctx,'manage-chat','对话',{id:x.publishId,cls:'small'})}${btn(ctx,'manage-pin',x.pinned?'取消固定':'固定到左侧',{id:x.publishId,cls:'small ghost'})}</div></div></article>`).join('')}</div>`:`<div class="cat-manage-empty">${icon(ctx,'expert',28)}<h2>${tab==='created'?'还没有创建助理':'还没有已安装的助理'}</h2><p>${tab==='created'?'从助理列表创建后，可以在这里管理。':'从助理列表添加后，可以在这里查看。'}</p></div>`}</div></main>`;
+}
+
 export function renderCatalog(ctx) {
-  const route=ctx.ui.route;if(!ROUTES.includes(route))return '';
+  const route=ctx.ui.route;if(route==='expert-config')return renderExpertManagement(ctx);if(!ROUTES.includes(route))return '';
   const [c,u]=setup(ctx),e=ctx.esc,q=u.queries[route]||'',current=u.filters[route]||'全部';
   const descriptions={plugins:'将工具与方法组合起来，在对话中直接使用。',skills:'为小悠提供处理特定任务的方法，也可以输入 / 指定使用。',mcp:'连接工具服务，查看每个连接的配置与状态。',experts:'把插件、技能和知识组合起来，专门处理一个领域的工作。'};
-  const header=`<div class="page-head cat-page-head"><div>${route==='experts'?'<div class="eyebrow">EXPERTS</div><h1>专家</h1>':tabs(ctx,route)}</div><div class="cat-head-actions">${route==='mcp'?btn(ctx,'new-mcp','添加 MCP',{cls:'primary',glyph:'plus'}):`${btn(ctx,'market',route==='plugins'?'插件市场':route==='skills'?'技能市场':'专家市场',{glyph:'grid'})}${btn(ctx,`new-${route==='plugins'?'plugin':route==='skills'?'skill':'expert'}`,route==='experts'?'创建专家':'创建',{cls:'primary',glyph:'plus'})}`}</div></div><div class="cat-intro"><p class="muted">${descriptions[route]}</p><div class="cat-search-row">${search(ctx,route,u)}<button class="icon-btn" title="刷新本地列表" aria-label="刷新本地列表" data-action="cat:refresh">${icon(ctx,'refresh',18)}</button></div></div>`;
+  const header=`<div class="page-head cat-page-head"><div><h1>${route==='experts'?'助理':'插件与工具'}</h1><p>${descriptions[route]}</p></div><div class="cat-head-actions">${route==='mcp'?btn(ctx,'new-mcp','添加 MCP',{cls:'primary',glyph:'plus'}):`${btn(ctx,'market',route==='plugins'?'插件市场':route==='skills'?'技能市场':'助理市场',{glyph:'grid'})}${btn(ctx,`new-${route==='plugins'?'plugin':route==='skills'?'skill':'expert'}`,route==='experts'?'创建助理':'创建',{cls:'primary',glyph:'plus'})}`}</div></div><div class="cat-navigation">${route==='experts'?'':tabs(ctx,route)}<div class="cat-search-row">${search(ctx,route,u)}<button class="icon-btn" title="刷新本地列表" aria-label="刷新本地列表" data-action="cat:refresh">${icon(ctx,'refresh',18)}</button></div></div>`;
   let content='';
   if(route==='plugins') {
     const values=[...CAT_LABELS,...new Set(c.plugins.map(p=>p.category).filter(x=>!CAT_LABELS.includes(x)))];
@@ -88,7 +117,7 @@ export function renderCatalog(ctx) {
   } else {
     const values=[...EXP_LABELS,...new Set(c.experts.map(x=>x.category).filter(x=>!EXP_LABELS.includes(x)))];
     const items=c.experts.filter(x=>matches(x,q)&&(current==='全部'||x.category===current));
-    content=filter(ctx,values,current)+(items.length?[...new Set(items.map(x=>x.category))].map(category=>`<section class="cat-section"><h2 class="section-title">${e(category)} <span class="cat-count">${items.filter(x=>x.category===category).length}</span></h2><div class="cat-card-grid">${items.filter(x=>x.category===category).map(x=>`<article class="card cat-expert-card"><button class="cat-card-main" data-action="cat:expert-detail" data-id="${e(x.id)}"><span class="cat-expert-avatar cat-tone-${category==='研发工程'?'violet':category==='效率与管理'?'orange':'blue'}">${icon(ctx,x.icon||'sparkles',26)}</span><span class="cat-card-copy"><span class="cat-card-title">${e(x.name)}</span><span class="cat-description">${e(x.description)}</span><span class="cat-scope-caption">${x.custom?'我的专家':'内置专家'}${x.requiresAuth?' · 需要业务账号授权':''}</span></span></button>${btn(ctx,'summon','召唤',{id:x.id,cls:'small'})}</article>`).join('')}</div></section>`).join(''):empty(ctx,'试试“数据”“质量”或其他业务关键词。'));
+    content=filter(ctx,values,current)+(items.length?[...new Set(items.map(x=>x.category))].map(category=>`<section class="cat-section"><h2 class="section-title">${e(category)} <span class="cat-count">${items.filter(x=>x.category===category).length}</span></h2><div class="cat-card-grid">${items.filter(x=>x.category===category).map(x=>`<article class="card cat-expert-card"><button class="cat-card-main" data-action="cat:expert-detail" data-id="${e(x.id)}"><span class="cat-expert-avatar cat-tone-${category==='研发工程'?'violet':category==='效率与管理'?'orange':'blue'}">${icon(ctx,x.icon||'sparkles',26)}</span><span class="cat-card-copy"><span class="cat-card-title">${e(x.name)}</span><span class="cat-description">${e(x.description)}</span><span class="cat-scope-caption">${x.custom?'我的助理':'内置助理'}${x.requiresAuth?' · 需要业务账号授权':''}</span></span></button>${btn(ctx,'summon','召唤',{id:x.id,cls:'small'})}</article>`).join('')}</div></section>`).join(''):empty(ctx,'试试“数据”“质量”或其他业务关键词。'));
   }
   return `<div class="cat-page">${header}${content}</div>`;
 }
@@ -100,8 +129,8 @@ function detailKV(ctx,rows) {return `<dl class="detail-list cat-detail-list">${r
 function markdown(ctx,text) {return text.split('\n').map(line=>line.startsWith('## ')?`<h3>${ctx.esc(line.slice(3))}</h3>`:line.trim()?`<p>${ctx.esc(line)}</p>`:'<div class="cat-md-gap"></div>').join('');}
 
 function pluginDetail(ctx,p) {
-  const e=ctx.esc;
-  ctx.modal(p.name,`<div class="cat-detail-hero"><span class="cat-app-icon cat-tone-blue">${icon(ctx,p.icon,28)}</span><div><span class="badge blue">${e(p.category)}</span><p class="muted">${e(p.description)}</p></div></div>${detailKV(ctx,[['启用状态',p.enabled?'已启用（本地演示设置）':'已停用'],['账号授权',p.requiresAuth?(p.auth==='demo-authorized'?'演示已授权 · 未连接真实账号':'未授权'):'此示例无需账号授权'],['来源',p.custom?'自定义插件':'内置示例']])}<div class="notice">启用决定是否在任务中选用；授权决定是否能访问账号数据。两者分别管理，当前不会请求真实权限。</div><div class="cat-detail-actions">${btn(ctx,'toggle',p.enabled?'停用插件':'启用插件',{id:p.id,cls:'ghost'})}${p.requiresAuth?btn(ctx,'auth-plugin',p.auth==='demo-authorized'?'查看演示授权':'配置账号授权',{id:p.id,cls:'primary'}):''}${p.custom?btn(ctx,'edit-plugin','编辑插件',{id:p.id}):''}</div>`,{drawer:true});
+  const e=ctx.esc,connected=isPluginConnected(ctx.state,p);
+  ctx.modal(p.name,`<div class="cat-detail-hero"><span class="cat-app-icon cat-tone-blue">${icon(ctx,p.icon,28)}</span><div><span class="badge blue">${e(p.category)}</span><p class="muted">${e(p.description)}</p></div></div>${detailKV(ctx,[['启用状态',p.enabled?'已启用（本地演示设置）':'已停用'],['账号授权',p.requiresAuth?(connected?'演示已授权 · 未连接真实账号':'未授权'):'此示例无需账号授权'],['来源',p.custom?'自定义插件':'内置示例']])}<div class="notice">启用决定是否在任务中选用；授权决定是否能访问账号数据。两者分别管理，当前不会请求真实权限。</div><div class="cat-detail-actions">${btn(ctx,'toggle',p.enabled?'停用插件':'启用插件',{id:p.id,cls:'ghost'})}${p.requiresAuth?btn(ctx,'auth-plugin',connected?'查看演示授权':'配置账号授权',{id:p.id,cls:'primary'}):''}${p.custom?btn(ctx,'edit-plugin','编辑插件',{id:p.id}):''}</div>`,{drawer:true});
 }
 function pluginForm(ctx,p={}) {
   ctx.modal(p.id?'编辑插件':'创建插件',`<form data-form="cat:plugin" data-id="${ctx.esc(p.id||'')}">${field(ctx,'名称','name',p.name,{required:true,max:50})}${field(ctx,'简介','description',p.description,{required:true,area:true,max:500})}${selectField(ctx,'分类','category',CAT_LABELS.slice(2),p.category||'办公协作')}<label class="cat-check"><input type="checkbox" name="requiresAuth" ${p.requiresAuth?'checked':''}>需要账号授权</label><p class="muted cat-small">创建的是本地插件说明与状态，不安装或执行真实工具。</p>${footer(ctx,p.id?'保存修改':'创建插件')}</form>`,{drawer:true});
@@ -124,23 +153,23 @@ function mcpForm(ctx,m={},mode='form',draft=null) {
 }
 function expertDetail(ctx,x) {
   const [c]=setup(ctx),e=ctx.esc;
-  ctx.modal(x.name,`<div class="cat-detail-hero"><span class="cat-expert-avatar cat-tone-blue">${icon(ctx,x.icon||'sparkles',30)}</span><div><span class="badge blue">${e(x.category)}</span><span class="badge">${x.custom?'自定义':'内置'}</span><p class="muted">${e(x.description)}</p></div></div>${x.requiresAuth?`<section class="cat-auth-box"><div><h3>账号授权</h3><p class="muted">以获准的身份访问工具与业务数据。</p><span class="badge ${x.auth==='demo-authorized'?'blue':'orange'}">${x.auth==='demo-authorized'?'演示已授权':'未授权'}</span></div>${btn(ctx,'auth-expert','配置授权',{id:x.id})}</section>`:''}<section class="cat-detail-section"><h3>开场提示词</h3><button class="cat-example" data-action="cat:expert-example" data-id="${e(x.id)}">${icon(ctx,'message',18)}<span>${e(x.example)}</span>${icon(ctx,'arrow-up-right',16)}</button></section><section class="cat-detail-section"><h3>角色定义</h3><p class="cat-preserve">${e(x.instructions)}</p></section>${detailKV(ctx,[['插件',(x.plugins||[]).map(id=>c.plugins.find(p=>p.id===id)?.name||id).join('、')||'按任务选用'],['技能',(x.skills||[]).map(id=>c.skills.find(p=>p.id===id)?.name||id).join('、')||'按任务选用'],['知识库',x.knowledge||'未指定']])}<div class="cat-detail-actions">${btn(ctx,'summon','召唤专家',{id:x.id,cls:'primary'})}${btn(ctx,'edit-expert','编辑配置',{id:x.id})}${x.custom?btn(ctx,'delete-expert','删除',{id:x.id,cls:'danger ghost'}):''}</div>`,{drawer:true});
+  ctx.modal(x.name,`<div class="cat-detail-hero"><span class="cat-expert-avatar cat-tone-blue">${icon(ctx,x.icon||'sparkles',30)}</span><div><span class="badge blue">${e(x.category)}</span><span class="badge">${x.custom?'自定义':'内置'}</span><p class="muted">${e(x.description)}</p></div></div>${x.requiresAuth?`<section class="cat-auth-box"><div><h3>账号授权</h3><p class="muted">以获准的身份访问工具与业务数据。</p><span class="badge ${x.auth==='demo-authorized'?'blue':'orange'}">${x.auth==='demo-authorized'?'演示已授权':'未授权'}</span></div>${btn(ctx,'auth-expert','配置授权',{id:x.id})}</section>`:''}<section class="cat-detail-section"><h3>开场提示词</h3><button class="cat-example" data-action="cat:expert-example" data-id="${e(x.id)}">${icon(ctx,'message',18)}<span>${e(x.example)}</span>${icon(ctx,'arrow-up-right',16)}</button></section><section class="cat-detail-section"><h3>角色定义</h3><p class="cat-preserve">${e(x.instructions)}</p></section>${detailKV(ctx,[['插件',(x.plugins||[]).map(id=>c.plugins.find(p=>p.id===id)?.name||id).join('、')||'按任务选用'],['技能',(x.skills||[]).map(id=>c.skills.find(p=>p.id===id)?.name||id).join('、')||'按任务选用'],['知识库',x.knowledge||'未指定']])}<div class="cat-detail-actions">${btn(ctx,'summon','召唤助理',{id:x.id,cls:'primary'})}${btn(ctx,'edit-expert','编辑配置',{id:x.id})}${x.custom?btn(ctx,'delete-expert','删除',{id:x.id,cls:'danger ghost'}):''}</div>`,{drawer:true});
 }
 function expertForm(ctx,x={}) {
   const [c]=setup(ctx),e=ctx.esc;
-  ctx.modal(x.id?'编辑专家':'创建专家',`<form data-form="cat:expert" data-id="${e(x.id||'')}"><div class="form-grid">${field(ctx,'名称','name',x.name,{required:true,max:60})}${selectField(ctx,'领域','category',EXP_LABELS.slice(1),x.category||'效率与管理')}</div>${field(ctx,'简介','description',x.description,{area:true,required:true,max:500})}${field(ctx,'角色定义','instructions',x.instructions,{area:true,required:true,rows:5})}${field(ctx,'开场提示词','example',x.example,{area:true,required:true,rows:2})}${field(ctx,'知识库说明','knowledge',x.knowledge,{placeholder:'例如：携程通识知识库'})}<fieldset class="cat-resource-field"><legend>引用插件</legend>${c.plugins.map(p=>`<label class="cat-check"><input type="checkbox" name="plugins" value="${e(p.id)}" ${(x.plugins||[]).includes(p.id)?'checked':''}>${e(p.name)}</label>`).join('')}</fieldset><fieldset class="cat-resource-field"><legend>引用技能</legend>${c.skills.map(s=>`<label class="cat-check"><input type="checkbox" name="skills" value="${e(s.id)}" ${(x.skills||[]).includes(s.id)?'checked':''}>${e(s.name)}</label>`).join('')}</fieldset><label class="cat-check"><input type="checkbox" name="requiresAuth" ${x.requiresAuth?'checked':''}>需要业务账号授权</label><p class="muted cat-small">本地保存专家定义。实际业务工具与数据访问尚未接入。</p>${footer(ctx,x.id?'保存修改':'创建专家')}</form>`,{wide:true});
+  ctx.modal(x.id?'编辑助理':'创建助理',`<form data-form="cat:expert" data-id="${e(x.id||'')}"><div class="form-grid">${field(ctx,'名称','name',x.name,{required:true,max:60})}${selectField(ctx,'领域','category',EXP_LABELS.slice(1),x.category||'效率与管理')}</div>${field(ctx,'简介','description',x.description,{area:true,required:true,max:500})}${field(ctx,'角色定义','instructions',x.instructions,{area:true,required:true,rows:5})}${field(ctx,'开场提示词','example',x.example,{area:true,required:true,rows:2})}${field(ctx,'知识库说明','knowledge',x.knowledge,{placeholder:'例如：携程通识知识库'})}<fieldset class="cat-resource-field"><legend>引用插件</legend>${c.plugins.map(p=>`<label class="cat-check"><input type="checkbox" name="plugins" value="${e(p.id)}" ${(x.plugins||[]).includes(p.id)?'checked':''}>${e(p.name)}</label>`).join('')}</fieldset><fieldset class="cat-resource-field"><legend>引用技能</legend>${c.skills.map(s=>`<label class="cat-check"><input type="checkbox" name="skills" value="${e(s.id)}" ${(x.skills||[]).includes(s.id)?'checked':''}>${e(s.name)}</label>`).join('')}</fieldset><fieldset class="cat-resource-field"><legend>引用 MCP</legend>${c.mcps.length?c.mcps.map(m=>`<label class="cat-check"><input type="checkbox" name="mcps" value="${e(m.id)}" ${(x.mcps||[]).includes(m.id)?'checked':''}>${e(m.name)}</label>`).join(''):'<p class="muted cat-small">暂无 MCP，可先到插件页面添加。</p>'}</fieldset><label class="cat-check"><input type="checkbox" name="requiresAuth" ${x.requiresAuth?'checked':''}>需要业务账号授权</label><p class="muted cat-small">本地保存助理定义。实际业务工具与数据访问尚未接入。</p>${footer(ctx,x.id?'保存修改':'创建助理')}</form>`,{wide:true});
 }
 
 function authorization(ctx,kind,item) {
-  const isMcp=kind==='mcps';
-  ctx.modal(isMcp?'连接说明':'账号授权说明',`<div class="cat-auth-explain"><span class="cat-app-icon cat-tone-blue">${icon(ctx,'shield',28)}</span><h3>${ctx.esc(item.name)}</h3><p>当前是交互原型，没有真实的身份认证、外部连接或数据访问。</p><p class="muted">可以切换演示状态，预览完成${isMcp?'连接':'授权'}后的界面。真实产品需要经过相应的账号与权限流程。</p></div><div class="form-actions"><button class="btn ghost" data-action="app:close-modal">取消</button><button class="btn primary" data-action="cat:demo-authorize" data-kind="${kind}" data-id="${ctx.esc(item.id)}">${isMcp?'设为演示连接就绪':'设为演示已授权'}</button>${!isMcp&&item.auth==='demo-authorized'?`<button class="btn ghost" data-action="cat:revoke-auth" data-kind="${kind}" data-id="${ctx.esc(item.id)}">清除演示授权</button>`:''}</div>`);
+  const isMcp=kind==='mcps',connected=kind==='plugins'?isPluginConnected(ctx.state,item):item.auth==='demo-authorized';
+  ctx.modal(isMcp?'连接说明':'账号授权说明',`<div class="cat-auth-explain"><span class="cat-app-icon cat-tone-blue">${icon(ctx,'shield',28)}</span><h3>${ctx.esc(item.name)}</h3><p>当前是交互原型，没有真实的身份认证、外部连接或数据访问。</p><p class="muted">可以切换演示状态，预览完成${isMcp?'连接':'授权'}后的界面。真实产品需要经过相应的账号与权限流程。</p></div><div class="form-actions"><button class="btn ghost" data-action="app:close-modal">取消</button><button class="btn primary" data-action="cat:demo-authorize" data-kind="${kind}" data-id="${ctx.esc(item.id)}">${isMcp?'设为演示连接就绪':'设为演示已授权'}</button>${!isMcp&&connected?`<button class="btn ghost" data-action="cat:revoke-auth" data-kind="${kind}" data-id="${ctx.esc(item.id)}">清除演示授权</button>`:''}</div>`);
 }
 function confirmDelete(ctx,kind,item) {ctx.modal('删除本地示例',`<p>从当前原型中删除「${ctx.esc(item.name)}」？这不会修改真实产品或本地技能文件。</p><div class="form-actions"><button class="btn ghost" data-action="app:close-modal">取消</button><button class="btn danger" data-action="cat:confirm-delete" data-kind="${kind}" data-id="${ctx.esc(item.id)}">确认删除</button></div>`);}
 function market(ctx) {
   const route=ctx.ui.route,kind=route==='plugins'?'plugins':route==='skills'?'skills':'experts';
-  const samples={plugins:[{id:'market-whiteboard',name:'白板与流程图',category:'办公协作',description:'把流程与结构整理为可讨论的图示。',icon:'layers',requiresAuth:false}],skills:[{id:'market-review',name:'会议行动项整理',description:'从会议材料提取决定、负责人和下一步。',scope:'全局',content:'## 会议行动项\n先区分讨论与决定，再提取负责人和截止时间；未明确的信息标为待确认。'}],experts:[{id:'market-writing',name:'文稿编辑专家',category:'效率与管理',description:'梳理结构、去除重复，让工作文稿清晰易读。',icon:'file',example:'帮我检查这份文稿的结构与表达。',instructions:'保留事实和条件，明确读者的阅读任务；修改表达，不新增事实。',plugins:['office'],skills:['weekly'],requiresAuth:false}]};
+  const samples={plugins:[{id:'market-whiteboard',name:'白板与流程图',category:'办公协作',description:'把流程与结构整理为可讨论的图示。',icon:'layers',requiresAuth:false}],skills:[{id:'market-review',name:'会议行动项整理',description:'从会议材料提取决定、负责人和下一步。',scope:'全局',content:'## 会议行动项\n先区分讨论与决定，再提取负责人和截止时间；未明确的信息标为待确认。'}],experts:[{id:'market-writing',name:'文稿编辑助理',category:'效率与管理',description:'梳理结构、去除重复，让工作文稿清晰易读。',icon:'file',example:'帮我检查这份文稿的结构与表达。',instructions:'保留事实和条件，明确读者的阅读任务；修改表达，不新增事实。',plugins:['office'],skills:['weekly'],requiresAuth:false}]};
   const [c]=setup(ctx);ctx.ui.catalog.marketItems=samples[kind];ctx.ui.catalog.marketKind=kind;
-  ctx.modal(`${kind==='plugins'?'插件':kind==='skills'?'技能':'专家'}市场`, `<p class="muted">这里展示可安装的本地示例，不访问真实市场。</p>${samples[kind].map(x=>`<article class="card cat-market-card"><span class="cat-app-icon cat-tone-blue">${icon(ctx,x.icon||'layers',24)}</span><div><h3>${ctx.esc(x.name)}</h3><p class="muted">${ctx.esc(x.description)}</p></div>${c[kind].some(y=>y.id===x.id)?'<span class="badge blue">已添加</span>':btn(ctx,'market-install','添加到演示',{id:x.id,cls:'small primary'})}</article>`).join('')}`,{wide:true});
+  ctx.modal(`${kind==='plugins'?'插件':kind==='skills'?'技能':'助理'}市场`, `<p class="muted">这里展示可安装的本地示例，不访问真实市场。</p>${samples[kind].map(x=>`<article class="card cat-market-card"><span class="cat-app-icon cat-tone-blue">${icon(ctx,x.icon||'layers',24)}</span><div><h3>${ctx.esc(x.name)}</h3><p class="muted">${ctx.esc(x.description)}</p></div>${c[kind].some(y=>y.id===x.id)?'<span class="badge blue">已添加</span>':btn(ctx,'market-install','添加到演示',{id:x.id,cls:'small primary'})}</article>`).join('')}`,{wide:true});
 }
 
 export function handleCatalog(action,element,ctx) {
@@ -150,6 +179,17 @@ export function handleCatalog(action,element,ctx) {
   const persist=(msg,close=true)=>{ctx.save();if(close)ctx.closeModal();ctx.render();if(msg)ctx.toast(msg);};
   switch(action.slice(4)) {
     case 'navigate':ctx.go(id);break;
+    case 'manage-dashboard':expertDashboard(ctx,id);break;
+    case 'dashboard-range':
+    case 'dashboard-metric':{
+      const view=ctx.ui.catalog.dashboard;if(!view||view.id!==id)break;
+      if(action==='cat:dashboard-range')view.days=element.dataset.value==='7'?7:30;
+      else view.metric=element.dataset.value==='users'?'users':'calls';
+      expertDashboard(ctx,id,true);break;
+    }
+    case 'manage-chat':
+    case 'manage-pin':{const source=managedExperts(ctx.state).find(x=>x.publishId===id);if(!source)break;const result=saveExpert(ctx.state,id);if(result.error){ctx.toast(result.error);break;}if(action==='cat:manage-pin')pinExpert(ctx.state,result.expert.id);ctx.save();if(action==='cat:manage-chat')ctx.go('agent/'+result.expert.id);else ctx.render();break;}
+    case 'manage-tab':if(['installed','created'].includes(id)){u.expertManageTab=id;ctx.render();}break;
     case 'filter':u.filters[ctx.ui.route]=id;ctx.render();break;
     case 'clear':u.queries[ctx.ui.route]='';u.filters[ctx.ui.route]='全部';u.scope='全部';ctx.render();break;
     case 'refresh':ctx.render();ctx.toast('本地列表已刷新');break;
@@ -173,15 +213,15 @@ export function handleCatalog(action,element,ctx) {
     case 'mcp-mode':{const form=element.closest('form'),d=Object.fromEntries(new FormData(form));const prev=c.mcps.find(y=>y.id===form.dataset.id)||{};if(id==='form'&&d.json){try{Object.assign(d,parseMcpJSON(d.json));}catch{ctx.toast('JSON 尚未完整，将保留原表单配置');}}mcpForm(ctx,prev,id,{...prev,...d});break;}
     case 'connect-mcp':if(m){if(m.status==='demo-connected'){m.status='unconnected';persist('已断开演示连接');}else authorization(ctx,'mcps',m);}break;
     case 'delete-mcp':if(m)confirmDelete(ctx,'mcps',m);break;
-    case 'new-expert':expertForm(ctx);break;
+    case 'new-expert':ctx.modal('创建助理',assistantCreateForm(ctx));break;
     case 'edit-expert':if(x)expertForm(ctx,x);break;
     case 'expert-detail':if(x)expertDetail(ctx,x);break;
     case 'auth-expert':if(x)authorization(ctx,'experts',x);break;
     case 'summon':if(x){ctx.closeModal();ctx.startTask(`请作为「${x.name}」帮助我处理接下来的任务。`,{expert:x.name});}break;
     case 'expert-example':if(x){ctx.closeModal();ctx.startTask(x.example,{expert:x.name});}break;
     case 'delete-expert':if(x)confirmDelete(ctx,'experts',x);break;
-    case 'demo-authorize':{const item=c[kind]?.find(y=>y.id===id);if(item){if(kind==='mcps')item.status='demo-connected';else item.auth='demo-authorized';persist('演示状态已更新，未连接真实账号');}break;}
-    case 'revoke-auth':{const item=c[kind]?.find(y=>y.id===id);if(item){item.auth='unconnected';persist('已清除演示授权');}break;}
+    case 'demo-authorize':{const item=c[kind]?.find(y=>y.id===id);if(item){if(kind==='mcps')item.status='demo-connected';else if(kind==='plugins')setPluginConnection(ctx.state,item,true);else item.auth='demo-authorized';persist('演示状态已更新，未连接真实账号');}break;}
+    case 'revoke-auth':{const item=c[kind]?.find(y=>y.id===id);if(item){if(kind==='plugins')setPluginConnection(ctx.state,item,false);else item.auth='unconnected';persist('已清除演示授权');}break;}
     case 'confirm-delete':if(['skills','mcps','experts'].includes(kind)){c[kind]=c[kind].filter(y=>y.id!==id);if(kind==='skills')c.experts.forEach(y=>y.skills=(y.skills||[]).filter(z=>z!==id));persist('已删除本地示例');}break;
     case 'market':market(ctx);break;
     case 'market-install':{const item=u.marketItems?.find(y=>y.id===id),k=u.marketKind;if(item&&c[k]&&!c[k].some(y=>y.id===id)){c[k].push({...structuredClone(item),custom:true,installed:true,enabled:true,auth:'unconnected'});ctx.save();ctx.render();market(ctx);ctx.toast('已添加到本地演示');}break;}
@@ -203,6 +243,13 @@ function parseMcpJSON(raw) {
 export function submitCatalog(name,form,ctx) {
   if(!name.startsWith('cat:'))return false;
   const [c]=setup(ctx),d=Object.fromEntries(new FormData(form)),id=form.dataset.id||'',type=name.slice(4);
+  if(type==='expert-quick'){
+    let values;try{values=assistantFromDescription(d.brief,c.experts);}catch(ex){return error(form,ex.message);}
+    const item={...values,id:uid('expert')};c.experts.push(item);
+    const result=saveExpert(ctx.state,item.id,'created');
+    ctx.save();ctx.closeModal();ctx.go('agent/'+result.expert.id);
+    ctx.toast('助理已创建，可在管理中随时完善配置');return true;
+  }
   if(!['plugin','skill','mcp','expert'].includes(type))return false;
   let values={...d};
   if(type==='mcp'&&form.dataset.mode==='json'){try{values=parseMcpJSON(d.json);}catch(ex){return error(form,ex.message);}}
@@ -227,7 +274,7 @@ export function submitCatalog(name,form,ctx) {
   } else {
     if(!values.description||!values.instructions||!values.example)return error(form,'请填写简介、角色定义与开场提示词。');
     const fd=new FormData(form);
-    item={...previous,id:id||uid('expert'),name:values.name,category:values.category,description:values.description,instructions:values.instructions,example:values.example,knowledge:values.knowledge,plugins:fd.getAll('plugins').filter(x=>c.plugins.some(y=>y.id===x)),skills:fd.getAll('skills').filter(x=>c.skills.some(y=>y.id===x)),requiresAuth:!!d.requiresAuth,auth:previous?.auth||'unconnected',custom:previous?.custom??true,icon:previous?.icon||'sparkles'};
+    item={...previous,id:id||uid('expert'),name:values.name,category:values.category,description:values.description,instructions:values.instructions,example:values.example,knowledge:values.knowledge,plugins:fd.getAll('plugins').filter(x=>c.plugins.some(y=>y.id===x)),skills:fd.getAll('skills').filter(x=>c.skills.some(y=>y.id===x)),mcps:fd.getAll('mcps').filter(x=>c.mcps.some(y=>y.id===x)),requiresAuth:!!d.requiresAuth,auth:previous?.auth||'unconnected',custom:previous?.custom??true,icon:previous?.icon||'sparkles'};
   }
   if(previous)c[collection][c[collection].indexOf(previous)]=item;else c[collection].push(item);
   ctx.save();ctx.closeModal();ctx.render();ctx.toast(id?'修改已保存在本地':'已创建本地示例');return true;

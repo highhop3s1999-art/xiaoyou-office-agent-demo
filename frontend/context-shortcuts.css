@@ -1,4 +1,3 @@
-/* Prompt helpers: visible context capabilities, with no retrieval on click. */
 .context-shortcuts{display:flex;align-items:center;gap:12px;margin:0 2px 12px;min-width:0;font-family:inherit}
 .context-shortcuts-label{font-size:11px;line-height:1.7;color:#929299;white-space:nowrap;flex-shrink:0}
 .context-shortcuts-items{display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-width:0}
@@ -10,7 +9,18 @@
 .home-page .context-shortcuts{margin:0 4px 13px;gap:14px}
 .home-page .context-shortcut{padding:8px 12px;font-size:12px;border-radius:10px;background:#fff}
 .cv-composer-wrap .context-shortcuts{gap:10px;margin-bottom:10px}
-@media(max-width:1300px){.cv-composer-wrap .context-shortcuts{gap:8px}.cv-composer-wrap .context-shortcut{font-size:11px;padding:6px 8px;gap:5px}.cv-composer-wrap .context-shortcuts-label{font-size:10px}}
-@media(max-width:1100px){.cv-composer-wrap .context-shortcuts-label{display:none}.cv-composer-wrap .context-shortcuts-items{gap:6px}}
-@media(max-width:760px){.home-page .context-shortcuts{align-items:flex-start;gap:8px}.home-page .context-shortcuts-label{padding-top:7px;font-size:10px}.home-page .context-shortcut{font-size:11px;padding:6px 8px}.context-shortcuts-items{gap:6px}.cv-work-active .context-shortcut{font-size:10px;padding:6px 7px;gap:4px}}
-@media(prefers-reduced-motion:reduce){.context-shortcut{transition:none}}
+@media(max-width:1300px){.cv-composer-wrap .context-shortcuts{gap:8px}
+.cv-composer-wrap .context-shortcut{font-size:11px;padding:6px 8px;gap:5px}
+.cv-composer-wrap .context-shortcuts-label{font-size:10px}
+}
+@media(max-width:1100px){.cv-composer-wrap .context-shortcuts-label{display:none}
+.cv-composer-wrap .context-shortcuts-items{gap:6px}
+}
+@media(max-width:760px){.home-page .context-shortcuts{align-items:flex-start;gap:8px}
+.home-page .context-shortcuts-label{padding-top:7px;font-size:10px}
+.home-page .context-shortcut{font-size:11px;padding:6px 8px}
+.context-shortcuts-items{gap:6px}
+.cv-work-active .context-shortcut{font-size:10px;padding:6px 7px;gap:4px}
+}
+@media(prefers-reduced-motion:reduce){.context-shortcut{transition:none}
+}

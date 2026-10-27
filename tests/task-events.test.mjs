@@ -70,9 +70,9 @@ c.ui.route='task-center';handleTaskCenter('tc:layout',{dataset:{layout:'list'}},
 ok(!html.includes('class="tm-board"')&&html.includes('tm-row'),'list mode remains available');
 const rc={...c,ui:{route:'task-center'}};renderTaskCenter(rc);ok(rc.ui.tmLayout==='list','layout selection survives reload');
 handleTaskCenter('tc:tab',{dataset:{tab:'events'}},c);html=renderTaskCenter(c);
-ok(html.includes('te-source-tabs')&&html.includes('群内经营复盘跟进'),'event rules have a dedicated source-filtered control surface');
+ok(html.includes('te-source-tabs')&&html.includes('群内经营复盘跟进'),'legacy event tab migrates into automation event filter');
 handleTaskCenter('te:source',{dataset:{id:'mail'}},c);html=renderTaskCenter(c);
 ok(html.includes('合同邮件待办整理')&&!html.includes('评审文档更新跟进'),'source filter isolates matching rules');
-handleTaskCenter('tc:tab',{dataset:{tab:'automations'}},c);html=renderTaskCenter(c);
-ok(!html.includes('群内经营复盘跟进')&&html.includes('酒店经营周复盘'),'automatic definitions do not duplicate event rules');
+handleTaskCenter('tc:tab',{dataset:{tab:'automations'}},c);handleTaskCenter('tc:filter',{dataset:{id:'all'}},c);html=renderTaskCenter(c);
+ok(html.includes('群内经营复盘跟进')&&html.includes('酒店经营周复盘'),'automation surface contains both event and scheduled rules');
 console.log(`${checks} event-task assertions passed: scope, matching, read-only tests, idempotency, cooldown, active-run coalescing, snapshots, approval gates, board, child routing and persistence.`);

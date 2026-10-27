@@ -1,0 +1,13 @@
+/* A quiet, editable next-turn hint inside the existing TRAE composer. */
+.followup-field{position:relative;min-width:0;width:100%}
+.followup-field textarea{display:block;width:100%;padding-bottom:34px!important}
+.followup-field textarea::placeholder{color:#929292!important;opacity:1}
+.followup-field .followup-accept{position:absolute;right:12px;bottom:4px;display:inline-flex;align-items:center;gap:6px;min-height:26px;padding:3px 7px;border:0;border-radius:6px;background:transparent;color:var(--tr-muted,#757575);font-family:inherit;font-size:11px;font-weight:400;line-height:1.4;cursor:pointer;box-shadow:none}
+.followup-accept kbd{padding:1px 4px;border:1px solid var(--tr-line,#eaeaea);border-radius:4px;background:var(--tr-canvas,#fff);font:inherit;line-height:1.3}
+.followup-field .followup-accept:hover{color:var(--tr-ink,#242424);background:var(--tr-fill,#f3f3f3)}
+.followup-field .followup-accept:focus-visible{outline:2px solid var(--tr-muted,#757575);outline-offset:2px}
+.followup-field textarea:not(:placeholder-shown)+.followup-accept{display:none}
+@media(pointer:coarse){.followup-field .followup-accept{min-height:32px}.followup-accept kbd{display:none}}
+:root[data-ui="refined"] :is(.cv-composer,.composer-box,.la-compose) .followup-field textarea,
+:root[data-ui="refined"] :is(.cv-composer,.composer-box,.la-compose) .followup-field textarea:focus{border:0!important;border-radius:0;background:transparent;box-shadow:none!important;outline:none}
+.la-compose>.followup-field{display:block}

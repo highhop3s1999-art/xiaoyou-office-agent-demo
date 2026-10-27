@@ -24,7 +24,7 @@ ok(createAgentConversation(state,'bi').id===second.id,'repeated empty creation i
 ok(conversationTasks(state,'bi').length===0,'new thread exposes no historical tasks');
 let modal={};const notices=[];const c={state,ui:{route:'agent/bi'},currentTask(){return selectedAgentTask(state,this.ui.route.slice(6));},save(){syncAgentThreads(state);},render(){},go(route){this.ui.route=route;this.ui.modal=null;},toast(message){notices.push(message);},modal(title,body,options){modal={title,body,options};this.ui.modal=modal;},popover(el,body){this.ui.popover={body};},startTask(prompt,options){const t=seedOfficeTask(newTask(prompt,options),'review',options);state.tasks.push(t);syncAgentThreads(state);focusAgentTask(state,t);return t.id;}};
 let html=renderAgentConversation(c);
-ok(html.includes('aria-label="新建对话"')&&html.includes('aria-label="查看历史对话"'),'new and history have visible explicit entries');
+ok(!html.includes('aria-label="新建对话"')&&!html.includes('aria-label="查看历史对话"'),'retired header history and new conversation controls stay removed');
 ok(html.includes(`data-conversation-id="${second.id}"`),'DOM identity scopes the conversation');
 ok(!html.includes('旧资料')&&!html.includes('旧报告')&&!html.includes('旧对话的经营复盘'),'fresh conversation summary and transcript do not expose prior work');
 inputConversation({dataset:{live:'cv:draft',agent:'bi',conversation:second.id},value:'第二条草稿'},c);

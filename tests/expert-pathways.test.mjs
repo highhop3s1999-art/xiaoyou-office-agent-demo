@@ -63,7 +63,7 @@ sendConversation(ctx,data.id,'你能帮我做什么？');
 ok(agentThread(state,'personal').draft==='主会话背景','direct expert conversation stays isolated');
 ok(agentThread(state,data.id).messages.at(-1).text.includes(data.publisher),'direct expert explains its domain and publisher');
 const consultations=temporary.office.consultations.length,taskBeforeInline=state.tasks.length;
-sendConversation(ctx,'personal','@数据开发专家 数据来源是什么？');
+sendConversation(ctx,'personal','@数据开发助理 数据来源是什么？');
 ok(temporary.office.consultations.length===consultations+1,'pasted complete @ name resolves a saved expert');
 ok(state.tasks.length===taskBeforeInline,'inline mention keeps the existing task');
 ok(agentThread(state,'personal').activeTaskId===temporary.id,'inline mention retains host ownership');

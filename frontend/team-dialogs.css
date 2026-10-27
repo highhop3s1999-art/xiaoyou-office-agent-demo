@@ -1,0 +1,334 @@
+/* Team workspace dialogs and task entry. Deliberately scoped to the team surface. */
+:root[data-workspace="team"] .modal-backdrop{
+  background:rgba(24,24,27,.28);
+  backdrop-filter:blur(5px);
+  padding:32px;
+}
+:root[data-workspace="team"] .modal{
+  width:520px;
+  max-height:calc(100dvh - 64px);
+  background:var(--ts-surface,#fff);
+  border:1px solid rgba(255,255,255,.85);
+  border-radius:12px;
+  box-shadow:0 24px 80px #2020202b,0 4px 18px #2020200d;
+  color:var(--ts-text,#232323);
+}
+:root[data-workspace="team"] .modal.wide{width:720px}
+:root[data-workspace="team"] .modal>header{
+  min-height:76px;
+  padding:22px 28px 19px;
+  border-bottom:1px solid var(--ts-border,#e9e9e9);
+}
+:root[data-workspace="team"] .modal>header h2{
+  color:var(--ts-text,#232323);
+  font-size:18px;
+  font-weight:650;
+  line-height:1.5;
+  letter-spacing:-.3px;
+}
+:root[data-workspace="team"] .modal>header .icon-btn{color:#808080;border-radius:6px}
+:root[data-workspace="team"] .modal>header .icon-btn:hover{background:#f2f2f2;color:#232323}
+:root[data-workspace="team"] .modal-body{padding:25px 28px 26px;scrollbar-gutter:stable}
+:root[data-workspace="team"] .modal-body>p{font-size:13px;color:#5c5c5c;line-height:1.8;margin:0 0 18px}
+:root[data-workspace="team"] .modal-body .field{
+  gap:8px;
+  margin-bottom:21px;
+  font-size:13px;
+  line-height:1.6;
+  color:#494949;
+}
+:root[data-workspace="team"] .modal-body .field>span{font-weight:550}
+:root[data-workspace="team"] .modal-body :is(input:not([type="checkbox"]),textarea,select){
+  min-height:41px;
+  border:1px solid #e3e3e3;
+  border-radius:7px;
+  padding:10px 12px;
+  background:#fff;
+  color:#333333;
+  font-size:13px;
+  line-height:1.7;
+  box-shadow:0 1px 2px #23232303;
+  transition:border-color .15s,box-shadow .15s;
+}
+:root[data-workspace="team"] .modal-body textarea{min-height:100px;resize:vertical;line-height:1.8}
+:root[data-workspace="team"] .modal-body :is(input,textarea)::placeholder{color:#9f9f9f}
+:root[data-workspace="team"] .modal-body :is(input:not([type="checkbox"]),textarea,select):hover{border-color:#d0d0d0}
+:root[data-workspace="team"] .modal-body :is(input:not([type="checkbox"]),textarea,select):focus{
+  border-color:#949494;
+  box-shadow:0 0 0 3px #8181810c;
+  outline:none;
+}
+:root[data-workspace="team"] .modal-body .field select{
+  padding-right:38px;
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237b8185' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E");
+  background-position:right 12px center;
+  background-repeat:no-repeat;
+}
+:root[data-workspace="team"] .modal-body .field>small{font-size:12px;color:#919191}
+:root[data-workspace="team"] .modal-body .form-actions{
+  gap:10px;
+  margin-top:26px;
+  padding-top:22px;
+  border-top:1px solid #efefef;
+}
+:root[data-workspace="team"] .modal-body .btn{
+  min-height:36px;
+  padding:8px 15px;
+  border:1px solid #e3e3e3;
+  border-radius:7px;
+  background:#fff;
+  box-shadow:0 1px 2px #22222204;
+  color:#4a4a4a;
+  font-size:13px;
+  font-weight:500;
+  line-height:1.4;
+  transition:background .15s,border-color .15s,box-shadow .15s;
+}
+:root[data-workspace="team"] .modal-body .btn:hover{background:#f7f7f7;border-color:#d0d0d0}
+:root[data-workspace="team"] .modal-body .btn.primary{
+  color:#fff;
+  border-color:#292929;
+  background:#292929;
+  box-shadow:0 1px 2px #22222212;
+}
+:root[data-workspace="team"] .modal-body .btn.primary:hover{background:#404040;border-color:#404040}
+:root[data-workspace="team"] .modal-body .btn.ghost{border-color:transparent;background:transparent;box-shadow:none}
+:root[data-workspace="team"] .modal-body .btn.ghost:hover{background:#f2f2f2}
+:root[data-workspace="team"] .modal-body .btn.danger{background:#616161;border-color:#616161;color:#fff}
+:root[data-workspace="team"] .modal-body .btn.danger:hover{background:#555555;border-color:#555555}
+:root[data-workspace="team"] .modal-body .btn:disabled{opacity:.4;box-shadow:none;cursor:not-allowed}
+:root[data-workspace="team"] :is(.modal,.ts-role-help-panel,.ts-task-page) :is(button,a):focus-visible{
+  outline:2px solid #949494;
+  outline-offset:3px;
+}
+:root[data-workspace="team"] .ts-form-note{font-size:13px;color:#808080;line-height:1.8;margin:0 0 21px}
+:root[data-workspace="team"] .ts-local-note,
+:root[data-workspace="team"] .ts-send-auth .notice{
+  font-size:12px;
+  color:#808080;
+  background:#f7f7f7;
+  border:1px solid #efefef;
+  border-radius:7px;
+  padding:11px 13px;
+  line-height:1.8;
+}
+
+/* Resource catalog: calm rows with clear selected and add states. */
+:root[data-workspace="team"] .ts-picker-search{
+  padding:0 12px;
+  height:42px;
+  margin-bottom:17px;
+  background:#f9f9f9;
+  border-color:#e7e7e7;
+  border-radius:8px;
+  color:#929292;
+}
+:root[data-workspace="team"] .modal-body .ts-picker-search input{
+  min-height:0;
+  background:transparent;
+  box-shadow:none;
+  padding:0;
+  border:0;
+}
+:root[data-workspace="team"] .ts-picker-search:focus-within{border-color:#a4a4a4;box-shadow:0 0 0 3px #81818108}
+:root[data-workspace="team"] .ts-picker-results{max-height:390px;padding-right:3px}
+:root[data-workspace="team"] .ts-picker-row{gap:14px;padding:17px 0;border-color:#efefef;align-items:flex-start}
+:root[data-workspace="team"] .ts-picker-row>.ts-resource-icon{width:40px;height:40px;border-radius:10px;flex-shrink:0}
+:root[data-workspace="team"] .ts-picker-row strong{font-size:14px;font-weight:600;color:#333333;line-height:1.6}
+:root[data-workspace="team"] .ts-picker-row p{font-size:12px;color:#808080;margin:5px 0 0;line-height:1.75}
+:root[data-workspace="team"] .ts-picker-row>.btn{min-height:31px;margin-top:3px;padding:6px 11px;font-size:12px}
+:root[data-workspace="team"] .ts-picker-row>.btn:disabled{color:#888888;background:#f6f6f6;border-color:#eeeeee;opacity:1}
+:root[data-workspace="team"] .ts-picker-empty{color:#929292;padding:49px 24px;font-size:13px}
+
+/* Expert setup: each labeled checkbox is a full-width interaction target. */
+:root[data-workspace="team"] .ts-expert-associations{margin:26px 0 6px;padding-top:22px;border-top:1px solid #ebebeb}
+:root[data-workspace="team"] .ts-expert-associations>h3{font-size:14px;font-weight:600;color:#313131;margin:0 0 7px}
+:root[data-workspace="team"] .ts-expert-associations>p{font-size:12px;color:#808080;line-height:1.75;margin-bottom:20px}
+:root[data-workspace="team"] .ts-association-group{margin-bottom:21px}
+:root[data-workspace="team"] .ts-association-group>legend{font-size:13px;color:#535353;font-weight:550;margin-bottom:10px;gap:8px}
+:root[data-workspace="team"] .ts-association-group>legend>span{font-size:11px;color:#969696;font-weight:400}
+:root[data-workspace="team"] .ts-association-options{gap:8px;max-height:264px;padding:2px}
+:root[data-workspace="team"] .ts-association-option{
+  gap:11px;
+  padding:12px 13px;
+  border:1px solid #e8e8e8;
+  border-radius:8px;
+  background:#fff;
+  transition:background .15s,border-color .15s,box-shadow .15s;
+}
+:root[data-workspace="team"] .ts-association-option:hover{background:#fafafa;border-color:#d4d4d4}
+:root[data-workspace="team"] .ts-association-option:has(input:checked){background:#f8f8f8;border-color:#cacaca}
+:root[data-workspace="team"] .ts-association-option:has(input:checked):hover{background:#f4f4f4;border-color:#b7b7b7}
+:root[data-workspace="team"] .ts-association-option:has(input:disabled){background:#f8f8f8;border-color:#e9e9e9;opacity:.65}
+:root[data-workspace="team"] .ts-association-option:has(input:focus-visible){outline:2px solid #989898;outline-offset:2px}
+:root[data-workspace="team"] .ts-association-option input[type="checkbox"]{width:15px;height:15px;margin:3px 0 0;accent-color:#767676;cursor:inherit}
+:root[data-workspace="team"] .ts-association-option strong{color:#414141;font-size:13px;font-weight:550;line-height:1.6}
+:root[data-workspace="team"] .ts-association-option small{color:#838383;font-size:12px;line-height:1.65;margin-top:4px}
+:root[data-workspace="team"] .ts-association-option em{font-size:11px;color:#a37741;line-height:1.65}
+:root[data-workspace="team"] .ts-association-option.has-warning{border-color:#dedede;background:#fcfcfc}
+:root[data-workspace="team"] .ts-association-empty{color:#909090;background:#f9f9f9;border-color:#e4e4e4;font-size:12px;padding:15px;border-radius:8px}
+:root[data-workspace="team"] .ts-association-tag{color:#6b6b6b;background:#f7f7f7;border:1px solid #e7e7e7;border-radius:5px;padding:4px 8px;font-size:12px}
+:root[data-workspace="team"] .ts-association-tag small,
+:root[data-workspace="team"] .ts-association-tag.is-unavailable{color:#a37741;font-size:11px}
+:root[data-workspace="team"] .ts-association-none{font-size:12px;color:#9e9e9e}
+
+/* Read views use quiet typography and a distinct reading surface. */
+:root[data-workspace="team"] .ts-detail-hero{gap:15px;margin:3px 0 25px;align-items:flex-start}
+:root[data-workspace="team"] .ts-detail-hero>.ts-resource-icon{height:48px;width:48px;border-radius:12px}
+:root[data-workspace="team"] .ts-detail-hero .badge{background:#f2f2f2;color:#848484;border-radius:4px;padding:3px 7px;font-size:11px}
+:root[data-workspace="team"] .ts-detail-hero p{margin-top:9px;font-size:13px;color:#727272;line-height:1.8}
+:root[data-workspace="team"] .ts-review-details{margin:0}
+:root[data-workspace="team"] .ts-review-details>div{grid-template-columns:82px 1fr;gap:15px;padding:13px 0;border-bottom:1px solid #efefef;font-size:13px;line-height:1.8}
+:root[data-workspace="team"] .ts-review-details dt{color:#929292}
+:root[data-workspace="team"] .ts-review-details dd{color:#5b5b5b}
+:root[data-workspace="team"] .ts-detail-content{margin-top:24px}
+:root[data-workspace="team"] .ts-detail-content h3{color:#3f3f3f;font-size:13px;font-weight:600;margin:0 0 11px}
+:root[data-workspace="team"] .ts-detail-content>p{background:#f8f8f8;border-color:#ededed;border-radius:8px;padding:17px 18px;color:#6f6f6f;font-size:13px;line-height:1.9;max-height:320px}
+:root[data-workspace="team"] .ts-document-list{gap:8px;margin-top:12px}
+:root[data-workspace="team"] .ts-document-list>details{background:#fff;border:1px solid #ebebeb;border-radius:7px;overflow:hidden}
+:root[data-workspace="team"] .ts-document-list summary{display:flex;align-items:center;gap:9px;padding:12px 13px;color:#717171;font-size:12px;cursor:pointer;list-style:none}
+:root[data-workspace="team"] .ts-document-list summary::-webkit-details-marker{display:none}
+:root[data-workspace="team"] .ts-document-list summary>span{flex:1}
+:root[data-workspace="team"] .ts-document-list summary:hover{background:#f9f9f9}
+:root[data-workspace="team"] .ts-document-list details[open] summary{border-bottom:1px solid #efefef;background:#f9f9f9}
+:root[data-workspace="team"] .ts-document-list details[open] summary>svg:last-child{transform:rotate(180deg)}
+:root[data-workspace="team"] .ts-document-list details>p{padding:14px;margin:0;color:#808080;font-size:12px;line-height:1.85;white-space:pre-wrap}
+
+/* Invitation remains a simple two-field form; no banner or footer divider. */
+:root[data-workspace="team"] .ts-invite-form>.form-actions{border-top:0;padding-top:1px;margin-top:27px}
+:root[data-workspace="team"] .ts-invite-form .ts-form-note{margin-bottom:25px}
+:root[data-workspace="team"] .ts-invite-results{margin:8px 0 23px;max-height:232px}
+:root[data-workspace="team"] .ts-invite-results:empty{margin-top:0}
+:root[data-workspace="team"] .ts-invite-match{gap:12px;border-color:#e8e8e8;border-radius:8px;padding:11px 12px;color:#3f3f3f;background:#fff}
+:root[data-workspace="team"] .ts-invite-match:hover:not(:disabled){background:#f8f8f8;border-color:#c9c9c9}
+:root[data-workspace="team"] .ts-invite-match .ts-avatar{background:#f1f1f1;color:#7c7c7c;font-size:13px;width:34px;height:34px}
+:root[data-workspace="team"] .ts-invite-match strong{font-size:13px;color:#3f3f3f;font-weight:550}
+:root[data-workspace="team"] .ts-invite-match small{font-size:11px;color:#8e8e8e;margin-top:4px}
+:root[data-workspace="team"] .ts-invite-status{color:#949494;font-size:11px}
+:root[data-workspace="team"] .ts-invite-empty{color:#929292;font-size:12px;line-height:1.75;padding:12px 1px}
+:root[data-workspace="team"] .ts-role-help-trigger{width:23px;height:23px;border-radius:5px;color:#a7a7a7}
+:root[data-workspace="team"] .ts-role-help-trigger:hover,
+:root[data-workspace="team"] .ts-role-help-trigger:focus-visible{color:#606060;background:#f3f3f3}
+:root[data-workspace="team"] .ts-role-help-panel{width:310px;padding:19px 20px;border-color:#e7e7e7;border-radius:9px;background:#fff;box-shadow:0 10px 35px #30303017;color:#818181;font-size:12px;line-height:1.75}
+:root[data-workspace="team"] .ts-role-help-panel h3{font-size:13px;color:#474747;font-weight:600;margin-bottom:13px}
+:root[data-workspace="team"] .ts-role-help-panel dl>div{grid-template-columns:49px 1fr;gap:10px;margin-top:12px}
+:root[data-workspace="team"] .ts-role-help-panel dt{color:#686868;font-weight:550}
+
+/* Team expert entry: a focused workspace with usable, visible input controls. */
+:root[data-workspace="team"] .ts-task-page{background:var(--ts-bg,#f8f8f8)}
+:root[data-workspace="team"] .ts-task-page>.conversation-header{height:65px;background:#fff;border-color:#ececec;padding:0 29px}
+:root[data-workspace="team"] .ts-task-page .conversation-title{gap:12px}
+:root[data-workspace="team"] .ts-task-page .conversation-title h2{color:#464646;font-size:13px;font-weight:550}
+:root[data-workspace="team"] .ts-task-page .conversation-title>.muted{color:#a1a1a1;font-size:11px}
+:root[data-workspace="team"] .ts-task-page>.conversation-header .btn{font-size:12px;color:#848484;background:none;border-color:transparent;border-radius:6px;padding:7px 9px}
+:root[data-workspace="team"] .ts-task-page>.conversation-header .btn:hover{color:#565656;background:#f5f5f5}
+:root[data-workspace="team"] .ts-task-center{max-width:760px;width:calc(100% - 80px);margin:0 auto;padding:51px 0 38px}
+:root[data-workspace="team"] .ts-task-intro{margin-bottom:26px}
+:root[data-workspace="team"] .ts-task-icon{height:58px;width:58px;margin-bottom:17px;border-radius:16px;background:#f2f2f2;color:#717171;box-shadow:inset 0 0 0 1px #e8e8e8}
+:root[data-workspace="team"] .ts-task-kicker{font-size:11px;color:#9c9c9c;letter-spacing:.02em;margin-bottom:9px}
+:root[data-workspace="team"] .ts-task-intro h1{font-size:27px;color:#353535;letter-spacing:-.7px;font-weight:650;margin-bottom:12px}
+:root[data-workspace="team"] .ts-task-intro>p{max-width:540px;font-size:13px;line-height:1.8;color:#898989;margin:0 auto 17px}
+:root[data-workspace="team"] .ts-task-mascot{width:75px;height:75px;margin-bottom:19px;filter:drop-shadow(0 6px 8px #5e5e5e09)}
+:root[data-workspace="team"] .ts-task-source{border-color:#e8e8e8;background:#f4f4f4;color:#8c8c8c;border-radius:5px;padding:5px 9px}
+:root[data-workspace="team"] .ts-task-tool-line{gap:7px 9px;margin-bottom:18px;color:#a0a0a0;font-size:11px}
+:root[data-workspace="team"] .ts-task-tool-line>span:not(:first-child){background:#f5f5f5;border-color:#e9e9e9;color:#838383;border-radius:5px;padding:4px 8px;font-size:11px}
+:root[data-workspace="team"] .ts-task-tool-line small{font-size:10px;color:#a2a2a2}
+:root[data-workspace="team"] .ts-task-center .composer-box{border:1px solid #e3e3e3;background:#fff;border-radius:13px;box-shadow:0 5px 20px #34343408,0 1px 3px #34343405}
+:root[data-workspace="team"] .ts-task-center .composer-box:focus-within{border-color:#aeaeae;box-shadow:0 5px 20px #34343408,0 0 0 3px #81818108}
+:root[data-workspace="team"] .ts-task-center .composer-box textarea{padding:20px 20px 10px;min-height:133px;color:#474747;line-height:1.85;font-size:14px}
+:root[data-workspace="team"] .ts-task-center .composer-box textarea::placeholder{color:#a6a6a6}
+:root[data-workspace="team"] .ts-task-center .composer-context{gap:6px;padding:0 18px}
+:root[data-workspace="team"] .ts-task-center .composer-context:not(:empty){padding-top:17px}
+:root[data-workspace="team"] .ts-task-center .context-chip{background:#f6f6f6;border-color:#e7e7e7;color:#7b7b7b;border-radius:5px;padding:5px 7px;font-size:11px}
+:root[data-workspace="team"] .ts-task-center .context-chip-open{color:inherit}
+:root[data-workspace="team"] .ts-task-center .composer-toolbar{padding:8px 15px 14px}
+:root[data-workspace="team"] .ts-task-center .icon-btn{color:#959595;border-radius:6px}
+:root[data-workspace="team"] .ts-task-center .icon-btn:hover{background:#f5f5f5;color:#6f6f6f}
+:root[data-workspace="team"] .ts-task-center :is(.model-button,.permission-button){font-size:11px;color:#808080;border-radius:5px}
+:root[data-workspace="team"] .ts-task-center :is(.model-button,.permission-button):hover{background:#f6f6f6}
+:root[data-workspace="team"] .ts-task-center .model-button .effort{color:#a8a8a8;font-size:10px}
+:root[data-workspace="team"] .ts-task-center .permission-button.full{color:#a18451}
+:root[data-workspace="team"] .ts-task-center .send-button{width:32px;height:32px;background:#333333;color:#fff;border-radius:8px;box-shadow:none}
+:root[data-workspace="team"] .ts-task-center .send-button:hover:not(:disabled){background:#4f4f4f}
+:root[data-workspace="team"] .ts-task-center .send-button:disabled{background:#f1f1f1;color:#bfbfbf}
+:root[data-workspace="team"] .ts-task-center .composer-note{font-size:10px;color:#acacac;padding:10px 3px}
+:root[data-workspace="team"] .ts-task-center .composer-bottom{background:#f4f4f4;border-color:#eaeaea;color:#a3a3a3;border-radius:0 0 11px 11px;font-size:10px;padding:22px 16px 10px}
+:root[data-workspace="team"] .ts-task-examples{margin:27px 0 0}
+:root[data-workspace="team"] .ts-task-examples>span{font-size:11px;color:#a0a0a0}
+:root[data-workspace="team"] .ts-task-examples .ts-example{min-height:44px;border-color:#e8e8e8;background:#fff;color:#787878;border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.65;gap:17px;margin-top:9px;transition:background .15s,border-color .15s,transform .15s}
+:root[data-workspace="team"] .ts-task-examples .ts-example:hover{background:#fafafa;border-color:#cacaca;transform:translateX(2px);color:#696969}
+:root[data-workspace="team"] .ts-task-examples .ts-example>svg{color:#adadad;flex-shrink:0}
+:root[data-workspace="team"] .ts-task-center .ts-private-note{font-size:11px;color:#a4a4a4;margin-top:23px;gap:7px}
+:root[data-workspace="team"] .ts-task-center>.notice{background:#fafafa;border-color:#e3e3e3;color:#a38654;border-radius:8px;font-size:12px}
+:root[data-workspace="team"] .ts-send-auth>p{font-size:13px;color:#727272}
+:root[data-workspace="team"] .ts-auth-list>div{border-color:#e9e9e9;background:#f9f9f9;padding:17px;border-radius:9px}
+:root[data-workspace="team"] .ts-auth-list>div>svg{color:#909090}
+:root[data-workspace="team"] .ts-auth-list strong{font-size:13px;color:#5a5a5a;font-weight:600}
+:root[data-workspace="team"] .ts-auth-list small{font-size:12px;color:#949494}
+:root[data-workspace="team"] .ts-send-auth .ts-auth-demo{font-size:11px;color:#a9a9a9}
+
+@media(max-width:760px){
+  :root[data-workspace="team"] .modal-backdrop{padding:18px}
+  :root[data-workspace="team"] .modal{max-height:calc(100dvh - 36px)}
+  :root[data-workspace="team"] .modal>header{min-height:66px;padding:18px 21px 16px}
+  :root[data-workspace="team"] .modal-body{padding:22px}
+  :root[data-workspace="team"] .modal-body .form-actions{padding-top:19px;margin-top:23px}
+  :root[data-workspace="team"] .ts-task-center{width:calc(100% - 40px);padding:39px 0 30px}
+  :root[data-workspace="team"] .ts-task-intro h1{font-size:24px}
+  :root[data-workspace="team"] .ts-task-page>.conversation-header{padding:0 20px}
+}
+@media(max-width:600px){
+  :root[data-workspace="team"] .modal-backdrop{padding:12px}
+  :root[data-workspace="team"] .modal{max-height:calc(100dvh - 24px)}
+  :root[data-workspace="team"] .modal-body{padding:20px}
+  :root[data-workspace="team"] .ts-picker-row{gap:11px}
+  :root[data-workspace="team"] .ts-picker-row>.ts-resource-icon{width:34px;height:34px;border-radius:9px}
+  :root[data-workspace="team"] .ts-picker-row strong{font-size:13px}
+  :root[data-workspace="team"] .ts-picker-row p{font-size:11px}
+  :root[data-workspace="team"] .ts-picker-row>.btn{padding:6px 9px;font-size:11px}
+  :root[data-workspace="team"] .ts-review-details>div{grid-template-columns:68px 1fr;gap:13px;font-size:12px}
+  :root[data-workspace="team"] .ts-task-page>.conversation-header{padding-left:51px;padding-right:14px}
+  :root[data-workspace="team"] .ts-task-page .conversation-title>.muted{display:none}
+  :root[data-workspace="team"] .ts-task-page>.conversation-header .btn{font-size:11px;padding:7px 4px}
+  :root[data-workspace="team"] .ts-task-center{width:calc(100% - 32px);padding-top:32px}
+  :root[data-workspace="team"] .ts-task-intro h1{font-size:22px}
+  :root[data-workspace="team"] .ts-task-intro>p{font-size:12px}
+  :root[data-workspace="team"] .ts-task-center .composer-box textarea{min-height:130px;font-size:13px;padding:18px 15px 9px}
+  :root[data-workspace="team"] .ts-task-center .composer-toolbar{padding:7px 10px 11px}
+  :root[data-workspace="team"] .ts-task-center :is(.model-button,.permission-button){font-size:10px}
+  :root[data-workspace="team"] .ts-task-center .composer-note>span{display:none}
+  :root[data-workspace="team"] .ts-task-center .ts-private-note{justify-content:center;text-align:center;font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){
+  :root[data-workspace="team"] .ts-task-examples .ts-example:hover{transform:none}
+  :root[data-workspace="team"] :is(.modal,.modal-backdrop){animation:none}
+  :root[data-workspace="team"] :is(.ts-association-option,.ts-task-examples .ts-example){transition:none}
+}
+/* Keep expert instructions and inherited resources visible together. */
+:root[data-workspace="team"] .modal:has(.ts-resource-editor.is-expert){width:940px}
+:root[data-workspace="team"] .ts-resource-editor.is-expert>.ts-form-note{margin-bottom:24px;font-size:12px}
+:root[data-workspace="team"] .ts-resource-editor.is-expert .ts-editor-layout{display:grid;grid-template-columns:minmax(0,1.14fr) minmax(0,1fr);gap:30px}
+:root[data-workspace="team"] .ts-editor-main{min-width:0}
+:root[data-workspace="team"] .ts-resource-editor.is-expert .ts-editor-main>.field:last-child{margin-bottom:0}
+:root[data-workspace="team"] .ts-editor-resources{padding:19px 18px 6px;border:1px solid #eaeaea;background:#fafafa;border-radius:9px;align-self:start;min-width:0}
+:root[data-workspace="team"] .ts-editor-resources .ts-expert-associations{padding:0;border:0;margin:0}
+:root[data-workspace="team"] .ts-editor-resources .ts-expert-associations>h3{font-size:14px;margin-bottom:8px}
+:root[data-workspace="team"] .ts-editor-resources .ts-expert-associations>p{font-size:11px;line-height:1.8;margin-bottom:22px}
+:root[data-workspace="team"] .ts-editor-resources .ts-association-group{margin-bottom:19px}
+:root[data-workspace="team"] .ts-editor-resources .ts-association-option{padding:12px;background:#fff}
+:root[data-workspace="team"] .ts-editor-resources .ts-association-option strong{font-size:12px}
+:root[data-workspace="team"] .ts-editor-resources .ts-association-option small{font-size:11px}
+:root[data-workspace="team"] .ts-editor-resources .ts-association-options{max-height:165px}
+:root[data-workspace="team"] .ts-resource-editor.is-expert>.form-actions{position:sticky;bottom:-27px;background:#fff;padding-bottom:3px;z-index:1}
+@media(max-width:760px){:root[data-workspace="team"] .ts-resource-editor.is-expert .ts-editor-layout{grid-template-columns:1fr;gap:22px}:root[data-workspace="team"] .ts-editor-resources{padding:17px}:root[data-workspace="team"] .ts-resource-editor.is-expert>.form-actions{bottom:-20px}}
+/* The catalog has one scrolling list; search and completion remain in view. */
+:root[data-workspace="team"] .modal:has(.ts-picker){height:min(690px,calc(100dvh - 64px))}
+:root[data-workspace="team"] .modal:has(.ts-picker) .modal-body{display:flex;flex:1;min-height:0;overflow:hidden}
+:root[data-workspace="team"] .ts-picker{display:flex;flex-direction:column;flex:1;min-width:0;min-height:0}
+:root[data-workspace="team"] .ts-picker-search{width:100%;max-width:none;flex-shrink:0}
+:root[data-workspace="team"] .ts-picker>.ts-form-note{flex-shrink:0}
+:root[data-workspace="team"] .ts-picker-results{flex:1;min-height:0;max-height:none;overflow:auto}
+:root[data-workspace="team"] .ts-picker>.form-actions{flex-shrink:0;margin-top:15px;padding-top:16px}
+:root[data-workspace="team"] .ts-picker-row>.btn:disabled:not(:has(svg)){background:#f5f5f5;border-color:#eeeeee;color:#a2a2a2}
+@media(max-width:600px){:root[data-workspace="team"] .modal:has(.ts-picker){height:calc(100dvh - 30px)}}

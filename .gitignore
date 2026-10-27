@@ -18,3 +18,12 @@ screenshots/*
 !screenshots/v15-expert-sidebar-1280.png
 !screenshots/v12-task-board-1440.png
 !screenshots/v12-event-tasks-1440.png
+
+# Local prototype workbench
+.backups/
+.qa/
+__pycache__/
+*.pyc
+*.log
+frontend/design-variants/archive/
+frontend/design-variants/reference-package/
