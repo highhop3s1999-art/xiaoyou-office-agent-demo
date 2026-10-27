@@ -1,0 +1,18 @@
+:root[data-ui="refined"] .workspace-main{display:flex;flex:1;flex-direction:column;min-width:0;min-height:0}
+:root[data-ui="refined"] .workspace-main>.main-stage{flex:1;min-height:0;width:100%}
+:root[data-ui="refined"] .workspace-tabs{display:flex;align-items:center;gap:5px;flex-shrink:0;height:42px;padding:0 3px 7px;min-width:0;background:var(--tr-shell)}
+:root[data-ui="refined"] .workspace-tab-list{display:flex;align-items:center;gap:5px;min-width:0;overflow-x:auto;scrollbar-width:none}
+:root[data-ui="refined"] .workspace-tab-list::-webkit-scrollbar{display:none}
+:root[data-ui="refined"] .workspace-tab{display:flex;align-items:center;width:190px;min-width:140px;flex-shrink:0;border:1px solid transparent;border-radius:9px;color:var(--tr-body);height:34px}
+:root[data-ui="refined"] .workspace-tab:hover{background:var(--tr-fill)}
+:root[data-ui="refined"] .workspace-tab.is-active{background:var(--tr-canvas);color:var(--tr-ink);border-color:var(--tr-line);box-shadow:0 1px 2px #00000003}
+:root[data-ui="refined"] .workspace-tab-select{display:flex;align-items:center;gap:8px;flex:1;min-width:0;height:100%;padding:0 7px 0 11px;border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;font-size:13px;cursor:pointer;text-align:left}
+:root[data-ui="refined"] .workspace-tab-select>svg{flex-shrink:0;color:var(--tr-muted)}
+:root[data-ui="refined"] .workspace-tab.is-active .workspace-tab-select>svg{color:var(--tr-body)}
+:root[data-ui="refined"] .workspace-tab-select>span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+:root[data-ui="refined"] :is(.workspace-tab-close,.workspace-tab-add){display:flex;align-items:center;justify-content:center;flex-shrink:0;border:0;background:transparent;color:var(--tr-muted);padding:0;cursor:pointer;border-radius:6px}
+:root[data-ui="refined"] .workspace-tab-close{width:24px;height:24px;margin-right:4px}
+:root[data-ui="refined"] .workspace-tab-add{width:32px;height:32px}
+:root[data-ui="refined"] :is(.workspace-tab-close,.workspace-tab-add):hover{background:#00000009;color:var(--tr-ink)}
+:root[data-ui="refined"] .workspace-tabs button:focus-visible{outline:2px solid #8aaee0;outline-offset:-2px}
+@media(max-width:600px){:root[data-ui="refined"] .workspace-tabs{height:44px;padding:5px 6px}:root[data-ui="refined"] .workspace-tab{width:155px}}

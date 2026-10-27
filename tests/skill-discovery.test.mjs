@@ -14,7 +14,7 @@ function task(state,prompt,scenario='review',agentId='personal'){const t=seedOff
 const state=setup(),a=state.office.agents.find(a=>a.id==='personal');
 const c={state,ui:{route:'agent/personal'},currentTask(){return state.tasks.find(t=>t.id===agentThread(state,'personal').activeTaskId);},save(){syncAgentThreads(state);},render(){},go(route){this.ui.route=route;},toast(){},closeModal(){this.ui.modal=null;},modal(title,body){this.ui.modal={title,body};},popover(el,body){this.popoverBody=body;}};
 const skillCount=state.catalog.skills.length,taskCount=state.tasks.length;
-ok(renderSkillEntry(c).includes('共调用 4,823 次'),'entry shows total-call trust signal');
+ok(renderSkillEntry(c).includes('4,823 次示例调用'),'entry labels synthetic usage as example data');
 ok(renderSkillEntry(c).includes('调用量为示例数据'),'synthetic counts are labelled');
 ok(state.catalog.skills.length===skillCount&&state.tasks.length===taskCount,'viewing recommendations installs or starts nothing');
 ok(matchDiscoverySkill(state,'你好')===null,'unmatched input stays silent');
@@ -61,7 +61,7 @@ ok(!state.skillDiscovery.offers[current.id]&&matchDiscoverySkill(state,spec.name
 ok(renderSkillLibrarySuggestions(c).includes(saved.skill.id),'private draft is visible in own skill library');
 const reloaded=JSON.parse(JSON.stringify(state));ok(reloaded.skillDiscovery.distilled['user:weekly']===saved.skill.id,'draft and deduplication survive persistence');
 connectLocalAgents(state,['claude-code','codex']);const html=renderAgentPins(c);
-ok(html.includes('我的专家')&&html.includes('la-unified-pin')&&!html.includes('la-sidebar'),'local connections share the existing expert group');
+ok(html.includes('我的助理')&&html.includes('la-unified-pin')&&!html.includes('la-sidebar'),'local connections share the existing expert group');
 ok(html.includes('data-action="local:add-menu"'),'My Experts plus opens the unified add menu');
 handleLocalAgents('local:add-menu',{dataset:{}},c);ok(c.popoverBody.includes('local:connect')&&c.popoverBody.includes('expert:share-form')&&c.popoverBody.includes('expert:tab'),'add menu covers local, shared and market entries');
 const useTask=task(state,'整理会议纪要');

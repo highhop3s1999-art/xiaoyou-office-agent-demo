@@ -1,8 +1,8 @@
-import {esc as E,icon} from './core.js?v=20261026-15.0';
-import {agentThread,addAgentMessage,focusAgentTask} from './agent-conversations.js?v=20261026-15.0';
-import {DISCOVERY_SKILLS,discoverySkill,initSkillDiscovery,installedSkill,installDiscoverySkill,dismissSkillOffer,recordSkillDetail,distillationCandidate,distillationSpec,saveDistilledSkill} from './skill-discovery-model.js?v=20261026-15.0';
+import {esc as E,icon} from './core.js';
+import {agentThread,addAgentMessage,focusAgentTask} from './agent-conversations.js';
+import {DISCOVERY_SKILLS,discoverySkill,initSkillDiscovery,installedSkill,installDiscoverySkill,dismissSkillOffer,recordSkillDetail,distillationCandidate,distillationSpec,saveDistilledSkill} from './skill-discovery-model.js';
 
-const heat=s=>s.calls?`共调用 ${s.calls.toLocaleString('zh-CN')} 次`:'本周新上架';
+const heat=s=>s.calls?`示例方法 · ${s.calls.toLocaleString('zh-CN')} 次示例调用`:'本周新上架';
 const B=(label,action,attrs='',kind='')=>`<button type="button" class="sr-button ${kind}" data-action="skillrec:${action}" ${attrs}>${label}</button>`;
 const symbol=s=>`<span class="sr-symbol ${s.tone}">${icon(s.icon,18)}</span>`;
 const attrs=(agentId='personal',taskId='',moment='entry')=>`data-agent="${E(agentId)}" data-task="${E(taskId)}" data-moment="${moment}"`;

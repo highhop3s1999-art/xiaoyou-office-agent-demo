@@ -95,6 +95,7 @@ function textElement(ctx, file, path, tag = 'span', klass = '') {
 
 function renderDashboard(ctx, file) {
   const records=file.content.projects;const entity=file.content.title.includes('订单')?'复核记录':'项目';const average=records.length?Math.round(records.reduce((n,p)=>n+Number(p.progress||0),0)/records.length):0;
+
   const shown = file.content.projects.filter(p => file.view.filter === '全部' || p.status === file.view.filter);
   return `<div class="viewer-dashboard">
     <div class="viewer-dashboard-brand"><span class="viewer-ocean-dot"></span>${textElement(ctx, file, 'owner')}<span class="viewer-demo-chip">合成示例</span></div>
@@ -213,7 +214,8 @@ export function applyAnnotations(task) {
   return applied;
 }
 
-function downloadFile(ctx, file) {
+export function downloadFile(ctx, file) {
+  file = clone(file); file.view ||= {sheet:0}; file.view.sheet ||= 0;
   const safeName = file.name.replace(/\.(html|pptx|xlsx|docx|pdf|csv|md)$/i, '');
   const e = value => esc(ctx, value);
   if (file.type === 'sheet') {

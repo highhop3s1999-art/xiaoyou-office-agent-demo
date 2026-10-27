@@ -1,4 +1,7 @@
-import {esc as E,icon,uid} from './core.js?v=20261026-15.0';
+import {renderVoiceButton} from './voice-input.js';
+import {renderFollowupField} from './followup-suggestions.js';
+import {saveExpertMessageOrder} from './expert-order.js';
+import {esc as E,icon,uid} from './core.js';
 
 export const LOCAL_AGENTS=[
   {id:'claude-code',name:'Claude Code',description:'Anthropic 命令行助手',tone:'clay'},
@@ -32,13 +35,13 @@ export function renderLocalAgentWorkspace(c){
   const a=spec(c.ui.route.slice(12)),entry=a&&connection(c.state,a.id);
   if(!a)return `<main class="la-workspace"><div class="la-workspace-empty"><h2>找不到这个 Agent</h2>${btn('接入本机 Agent','connect','','primary')}</div></main>`;
   if(!entry?.connected)return `<main class="la-workspace" data-screen-label="本机 Agent"><header class="la-workspace-head">${mark(a)}<h1>${a.name}</h1></header><div class="la-workspace-empty">${mark(a,'large')}<h2>连接 ${a.name}</h2><p>接入后，这里的会话与工作会保留在小悠中。</p>${btn('接入本机 Agent','connect','','primary')}</div></main>`;
-  return `<main class="la-workspace" data-screen-label="本机 Agent 工作区"><header class="la-workspace-head">${mark(a)}<div><h1>${a.name}</h1><p>这台电脑 <span>·</span> 演示连接</p></div>${btn(icon('settings',17),'connect','aria-label="管理本机 Agent 连接" title="管理连接"','icon')}</header><div class="la-messages" aria-label="${a.name}的工作会话">${entry.messages.length?`<div class="la-message-stack">${entry.messages.map(m=>`<article class="la-message ${m.role}"><p>${E(m.text).replaceAll('\n','<br>')}</p></article>`).join('')}</div>`:`<div class="la-workspace-empty">${mark(a,'large')}<h2>与 ${a.name} 一起工作</h2><p>交办一件工作，或继续讨论一个想法。</p><small>会话将独立保存在这里</small></div>`}</div><div class="la-compose-wrap"><form class="la-compose" data-form="local:message" data-identity="${a.id}"><input type="hidden" name="agent" value="${a.id}"><textarea id="local-agent-message" name="message" rows="2" data-live="local:draft" data-agent="${a.id}" aria-label="和${a.name}对话" placeholder="交给 ${a.name} 一件工作…">${E(entry.draft||'')}</textarea><div><span>${icon('monitor',14)}这台电脑</span><button class="la-send" type="submit" aria-label="发送给${a.name}" ${entry.draft?.trim()?'':'disabled'}>${icon('send',17)}</button></div></form><small class="la-compose-note">本地交互演示 · 不会启动本机应用或执行命令</small></div></main>`;
+  return `<main class="la-workspace" data-screen-label="本机 Agent 工作区"><header class="la-workspace-head">${mark(a)}<div><h1>${a.name}</h1><p>这台电脑 <span>·</span> 演示连接</p></div>${btn(icon('settings',17),'connect','aria-label="管理本机 Agent 连接" title="管理连接"','icon')}</header><div class="la-messages" aria-label="${a.name}的工作会话">${entry.messages.length?`<div class="la-message-stack">${entry.messages.map(m=>`<article class="la-message ${m.role}"><p>${E(m.text).replaceAll('\n','<br>')}</p></article>`).join('')}</div>`:`<div class="la-workspace-empty">${mark(a,'large')}<h2>与 ${a.name} 一起工作</h2><p>交办一件工作，或继续讨论一个想法。</p><small>会话将独立保存在这里</small></div>`}</div><div class="la-compose-wrap"><form class="la-compose" data-form="local:message" data-identity="${a.id}"><input type="hidden" name="agent" value="${a.id}">${renderFollowupField(`<textarea id="local-agent-message" name="message" rows="2" data-live="local:draft" data-agent="${a.id}" aria-label="和${a.name}对话" placeholder="交给 ${a.name} 一件工作…">${E(entry.draft||'')}</textarea>`, entry, null)}<div><span>${icon('monitor',14)}这台电脑</span>${renderVoiceButton('local-agent-message')}<button class="la-send" type="submit" aria-label="发送给${a.name}" ${entry.draft?.trim()?'':'disabled'}>${icon('send',17)}</button></div></form><small class="la-compose-note">本地交互演示 · 不会启动本机应用或执行命令</small></div></main>`;
 }
 
 export function handleLocalAgents(action,el,c){
   if(!action.startsWith('local:'))return false;
   const a=action.slice(6),id=el.dataset.id;
-  if(a==='add-menu'){c.popover(el,`<button data-action="expert:tab" data-id="market">${icon('expert',16)}从专家市场添加</button><button data-action="expert:share-form">${icon('link',16)}从分享链接添加</button><div class="divider"></div><button data-action="local:connect">${icon('monitor',16)}接入本机 Agent</button>`,220);}
+  if(a==='add-menu'){c.popover(el,`<button data-action="cat:new-expert">${icon('edit',16)}一句话创建助理</button><button data-action="expert:tab" data-id="market">${icon('expert',16)}从助理市场添加</button><button data-action="expert:share-form">${icon('link',16)}从分享链接添加</button><div class="divider"></div><button data-action="local:connect">${icon('monitor',16)}接入本机 Agent</button>`,220);}
   else if(a==='connect')connectionDialog(c);
   else if(a==='open'&&spec(id)&&connection(c.state,id)?.connected)c.go('local-agent/'+id);
   else if(a==='rescan'){c.toast('示例扫描完成：发现 Claude Code 和 Codex');}
@@ -55,7 +58,7 @@ export function submitLocalAgents(name,form,c){
     const values=Object.fromEntries(new FormData(form)),entry=connection(c.state,values.agent),a=spec(values.agent),text=String(values.message||'').trim();
     if(!entry?.connected||!a||!text)return true;
     entry.messages.push({id:uid('local-message'),role:'user',text,at:Date.now()},{id:uid('local-message'),role:'assistant',text:`已在 ${a.name} 的独立会话中记录这项工作。当前为本地演示，尚未向本机 Agent 提交执行。`,at:Date.now()+1});entry.draft='';
-    c.save();c.render();const input=document.getElementById('local-agent-message');if(input)input.value='';document.querySelector('.la-messages')?.scrollTo({top:1e8});return true;
+    saveExpertMessageOrder(c,values.agent);c.render();const input=document.getElementById('local-agent-message');if(input)input.value='';document.querySelector('.la-messages')?.scrollTo({top:1e8});return true;
   }
   return false;
 }

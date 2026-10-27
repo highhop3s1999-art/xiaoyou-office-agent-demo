@@ -1,8 +1,8 @@
-import {esc as E,icon} from './core.js?v=20261026-15.0';
-import {isChild,childRuns,childFiles,childArtifact} from './child-work.js?v=20261026-15.0';
+import {esc as E,icon} from './core.js';
+import {isChild,childRuns,childFiles,childArtifact} from './child-work.js';
 const btn=(text,action,attrs='',cls='')=>`<button type="button" class="${cls}" data-action="cp:${action}" ${attrs}>${text}</button>`;
 const tones=['green','cyan','violet','amber','pink'];
-const orb=(task,s)=>`<span class="d-orb ${tones[task.office.steps.filter(isChild).findIndex(x=>x.id===s.id)%5]}" aria-hidden="true"></span>`;
+const orb=(task,s)=>`<span class="d-orb ${tones[task.office.steps.filter(isChild).findIndex(x=>x.id===s.id)%5]}" aria-hidden="true">${icon(['book','chart','edit','shield','code'][task.office.steps.filter(isChild).findIndex(x=>x.id===s.id)%5]||'expert',16)}</span>`;
 export function childTabState(c,t){if(!t)return {tabs:[],active:null};c.ui.childTabs||={};return c.ui.childTabs[t.id]||={tabs:[],active:null};}
 export function activeChild(c,t){const tabs=childTabState(c,t);return t?.office.steps.find(s=>s.id===tabs.active&&isChild(s));}
 export function renderChildTabs(c,t){if(!t)return '';const tabs=childTabState(c,t),steps=tabs.tabs.map(id=>t.office.steps.find(s=>s.id===id&&isChild(s))).filter(Boolean);if(!steps.length)return '';return `<nav class="cp-tabs" role="tablist" aria-label="主会话与子智能体标签">${btn(icon('chat',16)+'<span>主会话</span>','main',`data-task="${t.id}" aria-selected="${!tabs.active}" role="tab"`,!tabs.active?'active':'')}${steps.map(s=>`<div class="cp-tab ${tabs.active===s.id?'active':''}">${btn(orb(t,s)+'<span>'+E(s.title)+'</span>','open',`data-task="${t.id}" data-id="${s.id}" role="tab" aria-selected="${tabs.active===s.id}"`)}${btn(icon('close',13),'close',`data-task="${t.id}" data-id="${s.id}" aria-label="关闭${E(s.title)}标签"`,'cp-close-tab')}</div>`).join('')}</nav>`;}

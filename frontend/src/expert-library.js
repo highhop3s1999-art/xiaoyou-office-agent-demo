@@ -5,24 +5,30 @@ const SEEDS={
   research:{publishId:'deep-research',name:'深度研究 Agent',publisher:'知识协作团队',category:'研究与写作',version:'v1.2',example:'研究办公 Agent 的交互方式，整理有来源的结论。'}
 };
 export function initExpertLibrary(state){const o=state.office;if(!o)return;
-  let primary=o.agents.find(a=>a.id==='personal');if(!primary){primary={id:'personal',name:'小悠',description:'理解目标，按需创建子 Agent，也能调用你保存的企业专家',icon:'sparkles',source:'主 Agent',version:'v1',pinned:true};o.agents.unshift(primary);}
+  let primary=o.agents.find(a=>a.id==='personal');if(!primary){primary={id:'personal',name:'小悠',description:'理解目标，按需创建子 Agent，也能调用你保存的企业助理',icon:'sparkles',source:'主 Agent',version:'v1',pinned:true};o.agents.unshift(primary);}
+  for(const x of state.catalog?.experts||[]){
+    let a=o.agents.find(a=>a.catalogId===x.id);
+    if(!a&&(x.custom||x.saved||x.pinned)){a={...x,id:'expert-'+x.id,publishId:x.id,catalogId:x.id,saved:true,pinned:!!x.pinned,libraryMigrated:true};o.agents.push(a);}
+    if(a){a.archived=false;for(const key of ['name','description','instructions','knowledge','plugins','skills','mcps','example','icon','category','auth','requiresAuth'])if(x[key]!==undefined)a[key]=x[key];a.custom=!!x.custom;}
+  }
+  for(const a of o.agents){if(a.catalogId&&!state.catalog?.experts.some(x=>x.id===a.catalogId)){a.archived=true;a.saved=false;a.pinned=false;}}
   primary.kind='primary';primary.source='主 Agent';primary.saved=false;primary.pinned=true;
   for(const a of o.agents.filter(a=>a.id!=='personal')){const seed=SEEDS[a.id];
     if(!a.libraryMigrated){Object.assign(a,seed||{publishId:a.catalogId||a.id,publisher:a.publisher||'业务共建团队'});a.libraryMigrated=true;}
-    a.kind='published';a.saved??=true;a.publisher||=a.catalogId==='artnova'?'数据分析平台团队':'业务共建团队';a.category||='业务专家';a.source='企业发布';
+    a.kind='published';a.saved??=true;a.publisher||=a.catalogId==='artnova'?'数据分析平台团队':'业务共建团队';if(a.category==='业务\u4e13\u5bb6')a.category='业务助理';a.category||='业务助理';a.source=a.custom?'个人创建':'企业发布';if(a.custom)a.publisher='我';
   }o.expertLibraryVersion=1;
 }
-export function savedExperts(state){return state.office.agents.filter(a=>a.kind==='published'&&a.saved);}
-export function publishedExperts(state){initExpertLibrary(state);const result=state.office.agents.filter(a=>a.kind==='published').map(a=>({...a,id:a.publishId}));
+export function savedExperts(state){return state.office.agents.filter(a=>a.kind==='published'&&a.saved&&!a.archived);}
+export function publishedExperts(state){initExpertLibrary(state);const result=state.office.agents.filter(a=>a.kind==='published'&&!a.archived).map(a=>({...a,id:a.publishId}));
   for(const x of state.catalog?.experts||[]){if(result.some(a=>a.publishId===x.id))continue;result.push({...x,id:x.id,publishId:x.id,catalogId:x.id,publisher:x.publisher||(x.id==='artnova'?'数据分析平台团队':x.category==='研发工程'?'研发效能团队':'业务共建团队'),version:x.version||'v1.0',kind:'published',source:'企业发布'});}return result;
 }
 export function publishedExpert(state,id){return publishedExperts(state).find(a=>a.publishId===id);}
-export function saveExpert(state,id,origin='market'){const source=publishedExpert(state,id);if(!source)return {error:'分享的专家不在当前演示目录中，请使用示例链接。'};
+export function saveExpert(state,id,origin='market'){const source=publishedExpert(state,id);if(!source)return {error:'分享的助理不在当前演示目录中，请使用示例链接。'};
   let a=state.office.agents.find(a=>a.kind==='published'&&a.publishId===id);const alreadySaved=!!a?.saved;
   if(!a){a={...source,id:'expert-'+id,pinned:false,saved:false,libraryMigrated:true};state.office.agents.push(a);}
   a.saved=true;a.savedFrom=origin;a.savedAt||=Date.now();return {expert:a,alreadySaved};
 }
-export function pinExpert(state,id,value){const a=state.office.agents.find(a=>a.id===id&&a.kind==='published'&&a.saved);if(!a)return false;a.pinned=value??!a.pinned;return true;}
+export function pinExpert(state,id,value){const a=state.office.agents.find(a=>a.id===id&&a.kind==='published'&&a.saved&&!a.archived);if(!a)return false;a.pinned=value??!a.pinned;return true;}
 export function expertSnapshots(state,ids=[]){return [...new Set(ids)].map(id=>savedExperts(state).find(a=>a.id===id)).filter(Boolean).map(a=>({id:a.id,publishId:a.publishId,name:a.name,version:a.version,publisher:a.publisher,icon:a.icon,description:a.description,category:a.category}));}
 export function parseExpertShare(state,input){try{const url=new URL(input.trim());const id=url.protocol==='xiaoyou:'&&url.hostname==='expert'?decodeURIComponent(url.pathname.slice(1)):decodeURIComponent(url.hash.match(/^#expert-share\/([^?/#]+)/)?.[1]||'');return publishedExpert(state,id)||null;}catch{return null;}}
 export function expertShareUrl(id,base='http://127.0.0.1:4314/frontend/'){return base.replace(/#.*$/,'')+'#expert-share/'+encodeURIComponent(id);}
